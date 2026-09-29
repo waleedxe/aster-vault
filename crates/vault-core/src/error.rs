@@ -38,4 +38,8 @@ pub enum VaultError {
     /// Serialization of a header/container failed.
     #[error("serialization failed")]
     Serialization(#[from] serde_json::Error),
+
+    /// A filesystem operation failed.
+    #[error("filesystem error")]
+    Io(#[from] std::io::Error),
 }

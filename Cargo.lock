@@ -4305,11 +4305,11 @@ dependencies = [
  "aes-gcm",
  "argon2",
  "base64 0.22.1",
- "hex",
  "rand",
  "serde",
  "serde_json",
  "thiserror 2.0.21",
+ "uuid",
  "zeroize",
 ]
 
@@ -4317,7 +4317,6 @@ dependencies = [
 name = "vault-recovery-cli"
 version = "0.1.0"
 dependencies = [
- "serde_json",
  "vault-core",
 ]
 

@@ -4,6 +4,7 @@
 //! header (version, KDF parameters, salts, wrapped data key) followed by an
 //! authenticated encrypted payload. See `docs/specs/02-vault-format.md`.
 
+pub mod format;
 pub mod header;
 pub mod vault;
 

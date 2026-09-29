@@ -94,17 +94,29 @@ fn tampered_wrapped_key_fails_closed() {
 
 #[test]
 fn tampered_aad_field_fails_closed() {
-    // Changing an AAD-bound field (kind) must break authentication even with the
-    // correct password, because the AAD no longer matches.
+    // Changing an AAD-bound field (created_at) must break authentication even
+    // with the correct password, because the AAD no longer matches.
     let created = create("pw", test_params()).unwrap();
     let mut header = created.header.clone();
-    header.kind = ContainerKind::Backup;
+    header.created_at += 1;
 
     let err = unlock_with_password(&header, "pw").unwrap_err();
     assert!(matches!(
         err,
         VaultError::InvalidCredentials | VaultError::AuthenticationFailed
     ));
+}
+
+#[test]
+fn backup_kind_does_not_break_the_wrap() {
+    // `kind` is intentionally outside the AAD so a copy can be marked as a
+    // backup without invalidating the wrapped keys.
+    let created = create("pw", test_params()).unwrap();
+    let mut header = created.header.clone();
+    header.kind = ContainerKind::Backup;
+
+    let unlocked = unlock_with_password(&header, "pw").unwrap();
+    assert_eq!(unlocked.as_array(), created.vault_key.as_array());
 }
 
 #[test]

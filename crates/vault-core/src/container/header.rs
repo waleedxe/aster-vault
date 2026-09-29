@@ -29,14 +29,14 @@ pub struct WrapDescriptor {
 
 /// The authenticated-but-not-encrypted metadata bound as AEAD associated data.
 ///
-/// Deliberately stable across key rotation: it excludes salts, KDF parameters and
-/// the wrap descriptors, so rewrapping one path cannot invalidate the other.
+/// Deliberately minimal and stable across key rotation and backup conversion: it
+/// excludes `kind`, salts, KDF parameters and the wrap descriptors, so rewrapping
+/// one path — or marking a copy as a backup — cannot invalidate the other.
 /// Tampering with any excluded field instead produces a wrong key and therefore a
 /// failed authentication, which still fails closed.
 #[derive(Debug, Serialize)]
 struct HeaderAad {
     format_version: u32,
-    kind: ContainerKind,
     created_at: i64,
 }
 
@@ -66,7 +66,6 @@ impl VaultHeader {
     pub fn aad(&self) -> Result<Vec<u8>, VaultError> {
         let aad = HeaderAad {
             format_version: self.format_version,
-            kind: self.kind,
             created_at: self.created_at,
         };
         Ok(serde_json::to_vec(&aad)?)
