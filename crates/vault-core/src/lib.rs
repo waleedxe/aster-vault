@@ -13,8 +13,11 @@ pub mod backup;
 pub mod container;
 pub mod crypto;
 pub mod error;
+pub mod generator;
 pub mod model;
+pub mod session;
 pub mod store;
+pub mod strength;
 
 pub use container::header::{ContainerKind, VaultHeader, FORMAT_VERSION};
 pub use container::vault::{
