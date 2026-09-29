@@ -1,0 +1,71 @@
+{
+  "app": {
+    "name": "خزنة أستر",
+    "tagline": "خصوصية بالتصميم. جاهزة للاستعادة."
+  },
+  "nav": {
+    "allItems": "كل العناصر",
+    "favorites": "المفضلة",
+    "logins": "تسجيلات الدخول",
+    "notes": "الملاحظات",
+    "cards": "البطاقات",
+    "identities": "الهويات",
+    "archive": "الأرشيف",
+    "backup": "النسخ الاحتياطي",
+    "settings": "الإعدادات"
+  },
+  "status": {
+    "locked": "مقفلة",
+    "unlocked": "مفتوحة",
+    "backedUpHoursAgo": "تم النسخ الاحتياطي قبل {{count}} ساعات"
+  },
+  "lock": {
+    "title": "خزنتك مقفلة.",
+    "subtitle": "أدخل كلمة المرور الرئيسية لفتح أسرارك.",
+    "masterPassword": "كلمة المرور الرئيسية",
+    "reveal": "إظهار كلمة المرور",
+    "hide": "إخفاء كلمة المرور",
+    "unlock": "فتح",
+    "useRecoveryKey": "استخدام مفتاح الاستعادة",
+    "recoveryKey": "مفتاح الاستعادة",
+    "failed": "لم تفتح كلمة المرور هذه الخزنة.",
+    "keepKeySeparate": "احفظ مفتاح الاستعادة في مكان منفصل."
+  },
+  "backup": {
+    "title": "النسخ الاحتياطي",
+    "health": "حالة النسخ الاحتياطي",
+    "verified": "تم التحقق من النسخة الاحتياطية",
+    "testBackup": "اختبر نسختك الاحتياطية",
+    "restore": "استعد على هذا الجهاز",
+    "couldNotVerify": "تعذّر التحقق من هذا الملف.",
+    "create": "إنشاء نسخة احتياطية الآن"
+  },
+  "common": {
+    "search": "ابحث في العناصر أو المواقع أو الملاحظات...",
+    "searchShortcut": "Ctrl + K",
+    "copy": "نسخ",
+    "copiedClearing": "تم النسخ — سيُمسح خلال {{seconds}} ثانية",
+    "cancel": "إلغاء",
+    "confirm": "تأكيد",
+    "close": "إغلاق"
+  },
+  "settings": {
+    "title": "الإعدادات",
+    "language": "اللغة",
+    "english": "English",
+    "arabic": "العربية",
+    "security": "الأمان",
+    "appearance": "المظهر",
+    "autoLock": "القفل التلقائي بعد الخمول",
+    "clipboardClear": "مسح الحافظة بعد",
+    "reducedMotion": "تقليل الحركة",
+    "about": "حول"
+  },
+  "onboarding": {
+    "welcome": "مرحبًا بك في خزنة أستر",
+    "createMasterPassword": "أنشئ كلمة مرور رئيسية قوية",
+    "generateRecoveryKey": "أنشئ مفتاح الاستعادة",
+    "testFirstBackup": "أنشئ واختبر نسختك الاحتياطية الأولى",
+    "done": "خزنتك جاهزة"
+  }
+}

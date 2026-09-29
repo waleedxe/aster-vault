@@ -1,0 +1,15 @@
+[package]
+name = "vault-recovery-cli"
+description = "Standalone Aster Vault recovery tool — restore a backup without the desktop UI"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+
+[[bin]]
+name = "aster-vault-recovery"
+path = "src/main.rs"
+
+[dependencies]
+vault-core = { path = "../vault-core" }
+serde_json = { workspace = true }

@@ -1,0 +1,40 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  frontend:
+    name: Frontend (lint, typecheck, tests, build)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+      - run: npm ci
+      - run: npm run format:check
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm run test
+      - run: npm run build
+
+  rust:
+    name: Rust core (fmt, clippy, tests)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo fmt --all -- --check
+      - run: cargo clippy -p vault-core -p vault-recovery-cli --all-targets -- -D warnings
+      - run: cargo test -p vault-core -p vault-recovery-cli
+
+  # The Tauri GUI crate requires Windows and the generated icon set. It is built
+  # natively on Windows in the release workflow (MSVC). A per-PR check is added
+  # once the icon set exists; see docs/specs/05-implementation-plan.md Phase 7.

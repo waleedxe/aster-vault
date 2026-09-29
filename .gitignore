@@ -1,0 +1,33 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+target/
+*.exe
+*.msi
+*.nsis
+
+# Tauri
+src-tauri/target/
+src-tauri/gen/
+
+# Secrets & local data — NEVER commit
+*.avlt
+*.avlt.bak
+*.env
+.env*
+secrets/
+*.key
+
+# Editor / OS
+.DS_Store
+Thumbs.db
+*.swp
+.idea/
+.vscode/*
+!.vscode/extensions.json
+
+# Logs
+*.log
+npm-debug.log*

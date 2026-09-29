@@ -1,0 +1,71 @@
+{
+  "app": {
+    "name": "Aster Vault",
+    "tagline": "Private by design. Ready to recover."
+  },
+  "nav": {
+    "allItems": "All Items",
+    "favorites": "Favorites",
+    "logins": "Logins",
+    "notes": "Notes",
+    "cards": "Cards",
+    "identities": "Identities",
+    "archive": "Archive",
+    "backup": "Backup",
+    "settings": "Settings"
+  },
+  "status": {
+    "locked": "Locked",
+    "unlocked": "Unlocked",
+    "backedUpHoursAgo": "Backed up {{count}} hours ago"
+  },
+  "lock": {
+    "title": "Your vault is locked.",
+    "subtitle": "Enter your master password to unlock your secrets.",
+    "masterPassword": "Master password",
+    "reveal": "Show password",
+    "hide": "Hide password",
+    "unlock": "Unlock",
+    "useRecoveryKey": "Use recovery key",
+    "recoveryKey": "Recovery key",
+    "failed": "This password did not unlock the vault.",
+    "keepKeySeparate": "Keep your recovery key somewhere separate."
+  },
+  "backup": {
+    "title": "Backup",
+    "health": "Backup health",
+    "verified": "Backup verified",
+    "testBackup": "Test your backup",
+    "restore": "Restore on this device",
+    "couldNotVerify": "This file could not be verified.",
+    "create": "Create backup now"
+  },
+  "common": {
+    "search": "Search items, websites, or notes...",
+    "searchShortcut": "Ctrl + K",
+    "copy": "Copy",
+    "copiedClearing": "Copied — will clear in {{seconds}}s",
+    "cancel": "Cancel",
+    "confirm": "Confirm",
+    "close": "Close"
+  },
+  "settings": {
+    "title": "Settings",
+    "language": "Language",
+    "english": "English",
+    "arabic": "العربية",
+    "security": "Security",
+    "appearance": "Appearance",
+    "autoLock": "Auto-lock after inactivity",
+    "clipboardClear": "Clear clipboard after",
+    "reducedMotion": "Reduce motion",
+    "about": "About"
+  },
+  "onboarding": {
+    "welcome": "Welcome to Aster Vault",
+    "createMasterPassword": "Create a strong master password",
+    "generateRecoveryKey": "Generate your recovery key",
+    "testFirstBackup": "Create and test your first backup",
+    "done": "Your vault is ready"
+  }
+}

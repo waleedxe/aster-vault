@@ -1,0 +1,27 @@
+[package]
+name = "aster-vault"
+description = "Aster Vault — a calm, private, offline Windows password manager"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+
+[lib]
+name = "aster_vault_lib"
+# Desktop-only application: an rlib for the binary entry point.
+crate-type = ["rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2.7.0", features = [] }
+
+[dependencies]
+tauri = { version = "2.12.0", features = [] }
+tauri-plugin-dialog = "2.7.3"
+tauri-plugin-opener = "2.5.5"
+
+vault-core = { path = "../crates/vault-core" }
+serde = { workspace = true }
+serde_json = { workspace = true }
+
+[features]
+custom-protocol = ["tauri/custom-protocol"]

@@ -1,0 +1,57 @@
+@import "tailwindcss";
+
+/*
+ * Aster Vault design tokens.
+ * Palette from docs/specs/04-screen-map.md. Verify contrast for every text and
+ * interactive state, including dark mode.
+ */
+@theme {
+  --color-midnight: #101827;
+  --color-navy: #1c2a3d;
+  --color-porcelain: #f7f8f5;
+  --color-mist: #e8eee9;
+  --color-emerald: #2e866f;
+  --color-mint: #d7ede3;
+  --color-amber: #d9a957;
+  --color-ink: #172231;
+  --color-muted: #657383;
+
+  --font-sans:
+    "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+
+  --radius-vault: 12px;
+}
+
+:root {
+  color-scheme: light dark;
+  font-family: var(--font-sans);
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+}
+
+/* Tabular numerals for codes and dates. */
+.tnum {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Reduced-motion mode: honour the OS preference and an explicit app setting. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    transition-duration: 0.001ms !important;
+  }
+}
+
+[data-reduced-motion="true"] *,
+[data-reduced-motion="true"] *::before,
+[data-reduced-motion="true"] *::after {
+  animation-duration: 0.001ms !important;
+  transition-duration: 0.001ms !important;
+}
