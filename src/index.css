@@ -2,29 +2,65 @@
 
 /*
  * Aster Vault design tokens.
- * Palette from docs/specs/04-screen-map.md. Verify contrast for every text and
- * interactive state, including dark mode.
+ *
+ * Source of truth for palette and shape. The Mint value follows the approved
+ * UI mockup (#CFEADC) rather than the earlier brief (#D7EDE3).
+ * See docs/specs/04-screen-map.md.
  */
+
+/* Manual light/dark: driven by a `.dark` class on <html> (see themeStore). */
+@custom-variant dark (&:where(.dark, .dark *));
+
 @theme {
+  /* Brand palette */
   --color-midnight: #101827;
   --color-navy: #1c2a3d;
+  --color-navy-deep: #16202f;
+  --color-tile: #0b1220; /* app-icon tile (near-black) */
   --color-porcelain: #f7f8f5;
   --color-mist: #e8eee9;
   --color-emerald: #2e866f;
-  --color-mint: #d7ede3;
+  --color-emerald-strong: #27745f;
+  --color-mint: #cfeadc;
   --color-amber: #d9a957;
   --color-ink: #172231;
   --color-muted: #657383;
+  --color-danger: #c0563f;
+
+  /* Shape */
+  --radius-control: 10px;
+  --radius-vault: 12px;
+  --radius-card: 14px;
+  --radius-tile: 22%;
+
+  /* Elevation */
+  --shadow-card: 0 1px 2px rgb(16 24 39 / 0.06), 0 1px 3px rgb(16 24 39 / 0.08);
+  --shadow-pop: 0 8px 24px rgb(16 24 39 / 0.16);
+
+  /* Type scale (desktop) */
+  --text-2xs: 11px;
+  --text-xs: 12px;
+  --text-sm: 13px;
+  --text-body: 14px;
+  --text-section: 16px;
+  --text-title: 24px;
+  --text-welcome: 32px;
+
+  /* Motion (brief: gentle 120-180ms) */
+  --duration-fast: 120ms;
+  --duration-base: 180ms;
 
   --font-sans:
     "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-
-  --radius-vault: 12px;
 }
 
 :root {
-  color-scheme: light dark;
+  color-scheme: light;
   font-family: var(--font-sans);
+}
+
+:root.dark {
+  color-scheme: dark;
 }
 
 html,
@@ -34,12 +70,28 @@ body,
   margin: 0;
 }
 
-/* Tabular numerals for codes and dates. */
+body {
+  background-color: var(--color-porcelain);
+  color: var(--color-ink);
+}
+
+:root.dark body {
+  background-color: var(--color-midnight);
+  color: var(--color-porcelain);
+}
+
+/* Focus ring in Emerald, per the brief. */
+:focus-visible {
+  outline: 2px solid var(--color-emerald);
+  outline-offset: 2px;
+}
+
+/* Tabular numerals for codes, dates and counts. */
 .tnum {
   font-variant-numeric: tabular-nums;
 }
 
-/* Reduced-motion mode: honour the OS preference and an explicit app setting. */
+/* Reduced motion: honour the OS setting or an explicit app choice. */
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

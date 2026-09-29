@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Wand2 } from "lucide-react";
+import { Moon, Sun, Wand2 } from "lucide-react";
 
+import { IconButton } from "../components/ui";
 import { GeneratorPanel } from "../features/generator/GeneratorPanel";
 import { BackupView } from "../features/backup/BackupView";
 import { ImportView } from "../features/import/ImportView";
@@ -9,6 +10,7 @@ import { SettingsView } from "../features/settings/SettingsView";
 import { VaultView } from "../features/vault/VaultView";
 import { useAutoLock } from "../hooks/useAutoLock";
 import { useSettingsStore } from "../stores/settingsStore";
+import { resolveTheme, useThemeStore } from "../stores/themeStore";
 import { useVaultStore } from "../stores/vaultStore";
 import { LanguageSwitcher } from "../components/common/LanguageSwitcher";
 import { Sidebar } from "../components/common/Sidebar";
@@ -21,6 +23,9 @@ export function AppShell({ onLock }: { onLock: () => void }) {
   const refresh = useVaultStore((state) => state.refresh);
   const lock = useVaultStore((state) => state.lock);
   const autoLockMinutes = useSettingsStore((state) => state.autoLockMinutes);
+  const themeMode = useThemeStore((state) => state.mode);
+  const toggleTheme = useThemeStore((state) => state.toggle);
+  const isDark = resolveTheme(themeMode) === "dark";
   const [showGenerator, setShowGenerator] = useState(false);
   const [showImport, setShowImport] = useState(false);
 
@@ -61,6 +66,13 @@ export function AppShell({ onLock }: { onLock: () => void }) {
             <p className="truncate text-sm text-muted">{t("app.tagline")}</p>
           </div>
           <div className="flex shrink-0 items-center gap-2">
+            <IconButton label={t("settings.appearance")} onClick={toggleTheme}>
+              {isDark ? (
+                <Sun className="h-4 w-4" />
+              ) : (
+                <Moon className="h-4 w-4" />
+              )}
+            </IconButton>
             <button
               type="button"
               onClick={() => {

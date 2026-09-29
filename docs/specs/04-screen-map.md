@@ -96,10 +96,13 @@ Detail panel: reveal, copy, edit, history, TOTP code, strength/reuse warnings.
 | Porcelain | `#F7F8F5` | primary light surface |
 | Mist | `#E8EEE9` | light secondary surface |
 | Emerald | `#2E866F` | primary action, focus ring |
-| Pale Mint | `#D7EDE3` | subtle accent |
+| Pale Mint | `#CFEADC` | subtle accent, brand petals |
 | Amber | `#D9A957` | warnings / backup attention |
 | Ink | `#172231` | primary text (light) |
 | Muted | `#657383` | secondary text |
+
+> The approved UI mockup shows Mint as `#CFEADC`; this supersedes the earlier
+> brief value `#D7EDE3` and is the source of truth in `src/index.css`.
 
 Verify contrast ratios for every text and interactive state, **including dark
 mode**. Never use colour alone to signal risk.

@@ -1,6 +1,7 @@
 import { useTranslation } from "react-i18next";
 import { Lock } from "lucide-react";
 
+import { Logo } from "../ui";
 import { useVaultStore, type View } from "../../stores/vaultStore";
 
 interface NavEntry {
@@ -52,11 +53,7 @@ export function Sidebar({ onLock }: { onLock: () => void }) {
       className="flex w-64 shrink-0 flex-col border-e border-mist bg-mist/40 p-4 dark:border-navy dark:bg-navy/40"
     >
       <div className="mb-6 flex items-center gap-2 px-2">
-        <span
-          aria-hidden="true"
-          className="inline-block h-6 w-6 rounded-[6px] bg-emerald"
-        />
-        <span className="text-lg font-semibold">{t("app.name")}</span>
+        <Logo size={24} withWordmark />
       </div>
 
       <ul className="flex-1 space-y-1">

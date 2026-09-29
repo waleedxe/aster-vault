@@ -150,3 +150,21 @@ failures → continue. Never accumulate broken phases.
   5. **Next / open:** run the installer on Windows to validate launch and the
      full flow; publish the draft release when ready; revoke the temporary token;
      independent security review still required.
+
+- **Session 4 — design system (workstreams A + B):**
+  1. PM UX/UI review delivered: current app is a functional skeleton; the mockup
+     is the design bar. Gaps listed across brand, shell, list, detail, states.
+  2. **Brand:** Mint corrected to `#CFEADC` (mockup is source of truth; brief and
+     `docs/specs/04-screen-map.md` updated). Added a **placeholder** pinwheel mark
+     (`assets/brand/aster-mark.svg`) + `<Logo/>` — **to be replaced with the
+     supplied logo artwork**, then `npm run tauri icon` regenerated.
+  3. **Design system:** full token set in `src/index.css` (palette, radii,
+     elevation, type scale, motion) with class-based light/dark theming
+     (`themeStore`, manual toggle in the shell).
+  4. **Primitives** in `src/components/ui/`: Button, IconButton, Input, Textarea,
+     Select, Checkbox, Switch, Card, Badge, Spinner, Avatar, Menu, Dialog, Tabs,
+     Toast/Toaster, Logo.
+  5. **Component gallery** at `#gallery` (dev only) to review all primitives in
+     EN/AR + light/dark.
+  6. Gates green (lint/typecheck/build; 9 tests). **Next:** workstream C (shell)
+     and D (list/detail) to match the mockup, and integrate the real logo.
