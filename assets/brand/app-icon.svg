@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96" role="img" aria-label="Aster Vault icon">
+  <title>Aster Vault app icon</title>
+  <!-- App-icon tile: near-black rounded square with the brand mark. -->
+  <defs>
+    <mask id="aster-negative-space">
+      <rect width="96" height="96" fill="#ffffff" />
+      <path
+        d="M48 30 Q50 44 62 48 Q50 52 48 66 Q46 52 34 48 Q46 44 48 30 Z"
+        fill="#000000"
+      />
+    </mask>
+  </defs>
+  <rect width="96" height="96" rx="22" fill="#0B1220" />
+  <g transform="translate(48 48) scale(0.64) translate(-48 -48)" mask="url(#aster-negative-space)">
+    <ellipse cx="48" cy="27" rx="19" ry="8.6" fill="#2E866F" transform="rotate(45 48 48)" />
+    <ellipse cx="48" cy="27" rx="19" ry="8.6" fill="#CFEADC" transform="rotate(135 48 48)" />
+    <ellipse cx="48" cy="27" rx="19" ry="8.6" fill="#2E866F" transform="rotate(225 48 48)" />
+    <ellipse cx="48" cy="27" rx="19" ry="8.6" fill="#CFEADC" transform="rotate(315 48 48)" />
+  </g>
+</svg>

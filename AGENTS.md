@@ -168,3 +168,19 @@ failures → continue. Never accumulate broken phases.
      EN/AR + light/dark.
   6. Gates green (lint/typecheck/build; 9 tests). **Next:** workstream C (shell)
      and D (list/detail) to match the mockup, and integrate the real logo.
+
+- **Session 5 — workstreams C + D (shell, list, detail):**
+  1. **Icon pipeline:** `assets/brand/aster-mark.svg` + `app-icon.svg` (vector,
+     pinwheel + negative-space star) → `scripts/render-icon.mjs` (resvg) →
+     `assets/icon-source.png` → `npm run icon:build` regenerates the full icon
+     set. Swap the SVG when the final artwork arrives.
+  2. **Shell:** greeting header, global search with `Ctrl+K`, sort control,
+     grid/list toggle, vault selector, theme toggle, language switcher, sidebar
+     with per-category counts and pinned Settings + Lock.
+  3. **List:** monogram avatars, title/subtitle, star + overflow menu per row,
+     grid layout option.
+  4. **Detail:** large avatar header, per-field cards with reveal/copy/open,
+     notes card, and a backup-status card.
+  5. New i18n keys (`home.*`) in EN + AR (parity preserved).
+  6. Gates green. **Next:** workstream E (states/motion/a11y polish) and F
+     (bring backup/import/settings/onboarding to the same bar).

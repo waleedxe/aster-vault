@@ -20,6 +20,22 @@
     "backedUpHoursAgo": "Backed up {{count}} hours ago",
     "neverBackedUp": "No backup yet"
   },
+  "home": {
+    "morning": "Good morning",
+    "afternoon": "Good afternoon",
+    "evening": "Good evening",
+    "subtitle": "Your information stays private and in your control.",
+    "vault": "Personal",
+    "sort": "Sort",
+    "sortName": "Name",
+    "sortUpdated": "Recently updated",
+    "grid": "Grid view",
+    "list": "List view",
+    "backupVerified": "Backup verified",
+    "lastBackup": "Last backup",
+    "today": "Today",
+    "noBackup": "No backup yet"
+  },
   "lock": {
     "title": "Your vault is locked.",
     "subtitle": "Enter your master password to unlock your secrets.",

@@ -1,11 +1,39 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Copy, Pencil, Star, Trash2 } from "lucide-react";
+import {
+  Copy,
+  ExternalLink,
+  Eye,
+  EyeOff,
+  LayoutGrid,
+  List,
+  MoreVertical,
+  Pencil,
+  Plus,
+  Star,
+  Trash2,
+} from "lucide-react";
+import { openUrl } from "@tauri-apps/plugin-opener";
 
+import {
+  Avatar,
+  Badge,
+  Button,
+  Card,
+  Checkbox,
+  Dialog,
+  IconButton,
+  Input,
+  Menu,
+  Select,
+  Textarea,
+  toast,
+} from "../../components/ui";
 import { GeneratorPanel } from "../generator/GeneratorPanel";
 import { useClipboard } from "../../hooks/useClipboard";
 import * as api from "../../lib/tauri";
 import type { ItemDto, ItemInput, ItemType } from "../../lib/tauri";
+import { getRememberedBackupDir } from "../../lib/paths";
 import { useSettingsStore } from "../../stores/settingsStore";
 import { filterByView, useVaultStore } from "../../stores/vaultStore";
 
@@ -13,13 +41,14 @@ interface FieldSpec {
   key: string;
   labelKey: string;
   secret?: boolean;
+  link?: boolean;
 }
 
 const FIELD_SCHEMA: Record<ItemType, FieldSpec[]> = {
   login: [
     { key: "username", labelKey: "fields.username" },
     { key: "password", labelKey: "fields.password", secret: true },
-    { key: "url", labelKey: "fields.url" },
+    { key: "url", labelKey: "fields.url", link: true },
   ],
   note: [],
   card: [
@@ -39,19 +68,33 @@ const FIELD_SCHEMA: Record<ItemType, FieldSpec[]> = {
 
 const ITEM_TYPES: ItemType[] = ["login", "note", "card", "identity", "totp"];
 
-/** The main vault screen: list, detail, and editor. */
+function subtitleFor(item: ItemDto): string {
+  return (
+    item.fields.username ||
+    item.fields.url ||
+    item.fields.email ||
+    item.notes ||
+    ""
+  );
+}
+
+/** The main vault screen: list/grid, detail, and editor. */
 export function VaultView() {
   const { t } = useTranslation();
   const items = useVaultStore((state) => state.items);
   const view = useVaultStore((state) => state.view);
-  const query = useVaultStore((state) => state.query);
-  const setQuery = useVaultStore((state) => state.setQuery);
   const selectedId = useVaultStore((state) => state.selectedId);
   const select = useVaultStore((state) => state.select);
   const refresh = useVaultStore((state) => state.refresh);
 
   const [editing, setEditing] = useState<ItemDto | "new" | null>(null);
   const [reusedCount, setReusedCount] = useState(0);
+  const [sort, setSort] = useState<"name" | "updated">("name");
+  const [layout, setLayout] = useState<"list" | "grid">("list");
+  const [backup, setBackup] = useState<{ has: boolean; text: string | null }>({
+    has: false,
+    text: null,
+  });
 
   useEffect(() => {
     void api
@@ -60,83 +103,156 @@ export function VaultView() {
       .catch(() => setReusedCount(0));
   }, [items]);
 
+  useEffect(() => {
+    const dir = getRememberedBackupDir();
+    if (!dir) return;
+    let active = true;
+    void api
+      .secondsSinceLatestBackup(dir)
+      .then((age) => {
+        if (!active) return;
+        if (age == null) {
+          setBackup({ has: false, text: null });
+        } else {
+          setBackup({
+            has: true,
+            text: new Date(Date.now() - age * 1000).toLocaleString(),
+          });
+        }
+      })
+      .catch(() => {
+        if (active) setBackup({ has: false, text: null });
+      });
+    return () => {
+      active = false;
+    };
+  }, [items]);
+
   const visible = filterByView(items, view);
-  const selected = visible.find((item) => item.id === selectedId) ?? null;
+  const sorted = useMemo(() => {
+    const copy = [...visible];
+    copy.sort((a, b) =>
+      sort === "name"
+        ? a.title.localeCompare(b.title)
+        : b.updated_at - a.updated_at,
+    );
+    return copy;
+  }, [visible, sort]);
+
+  const selected = sorted.find((item) => item.id === selectedId) ?? null;
 
   return (
-    <div className="flex h-full">
+    <div className="flex min-h-0 flex-1">
       <section className="flex w-1/2 min-w-72 flex-col border-e border-mist dark:border-navy">
-        <div className="flex items-center gap-2 border-b border-mist p-4 dark:border-navy">
-          <input
-            type="search"
-            value={query}
-            onChange={(event) => setQuery(event.target.value)}
-            placeholder={t("vault.search")}
-            className="w-full rounded-vault border border-mist bg-transparent px-3 py-2 text-sm focus-visible:outline-2 focus-visible:outline-emerald dark:border-navy"
-          />
-          <button
-            type="button"
-            onClick={() => setEditing("new")}
-            className="min-h-10 shrink-0 rounded-vault bg-emerald px-3 py-2 text-sm font-medium text-white"
-          >
-            {t("actions.new")}
-          </button>
+        <div className="flex items-center justify-between gap-2 px-4 py-3">
+          <h2 className="text-section font-semibold">
+            {t("nav.allItems")}{" "}
+            <span className="text-sm font-normal text-muted tnum">
+              {sorted.length}
+            </span>
+          </h2>
+          <div className="flex items-center gap-2">
+            {reusedCount > 0 && (
+              <Badge tone="amber">
+                {t("vault.reused", { count: reusedCount })}
+              </Badge>
+            )}
+            <Menu
+              label={t("home.sort")}
+              trigger={
+                <span className="inline-flex items-center gap-1 text-xs text-muted">
+                  {t("home.sort")}:{" "}
+                  {sort === "name" ? t("home.sortName") : t("home.sortUpdated")}
+                </span>
+              }
+              items={[
+                {
+                  id: "name",
+                  label: t("home.sortName"),
+                  onSelect: () => setSort("name"),
+                },
+                {
+                  id: "updated",
+                  label: t("home.sortUpdated"),
+                  onSelect: () => setSort("updated"),
+                },
+              ]}
+            />
+            <IconButton
+              label={t("home.list")}
+              size="sm"
+              active={layout === "list"}
+              onClick={() => setLayout("list")}
+            >
+              <List className="h-4 w-4" />
+            </IconButton>
+            <IconButton
+              label={t("home.grid")}
+              size="sm"
+              active={layout === "grid"}
+              onClick={() => setLayout("grid")}
+            >
+              <LayoutGrid className="h-4 w-4" />
+            </IconButton>
+            <Button
+              size="sm"
+              icon={<Plus className="h-4 w-4" />}
+              onClick={() => setEditing("new")}
+            >
+              {t("actions.new")}
+            </Button>
+          </div>
         </div>
 
-        {reusedCount > 0 && (
-          <p role="status" className="px-4 py-2 text-xs text-amber">
-            {t("vault.reused", { count: reusedCount })}
-          </p>
-        )}
-
-        <ul className="flex-1 overflow-auto">
-          {visible.length === 0 && (
-            <li className="p-6 text-sm text-muted">{t("vault.empty")}</li>
-          )}
-          {visible.map((item) => {
-            const active = item.id === selectedId;
-            return (
-              <li key={item.id}>
+        <div className="min-h-0 flex-1 overflow-auto">
+          {sorted.length === 0 ? (
+            <p className="p-6 text-sm text-muted">{t("vault.empty")}</p>
+          ) : layout === "list" ? (
+            <ul>
+              {sorted.map((item) => (
+                <ItemRow
+                  key={item.id}
+                  item={item}
+                  active={item.id === selectedId}
+                  onSelect={() => select(item.id)}
+                  onEdit={() => setEditing(item)}
+                  onChanged={() => void refresh()}
+                />
+              ))}
+            </ul>
+          ) : (
+            <div className="grid grid-cols-2 gap-3 p-4">
+              {sorted.map((item) => (
                 <button
+                  key={item.id}
                   type="button"
                   onClick={() => select(item.id)}
                   className={
-                    "flex w-full items-center gap-3 border-b border-mist/60 px-4 py-3 text-start dark:border-navy/60 " +
-                    (active
-                      ? "bg-mint/50 dark:bg-midnight"
-                      : "hover:bg-mist/40 dark:hover:bg-navy/30")
+                    "flex flex-col items-start gap-2 rounded-card border p-4 text-start transition-colors duration-[var(--duration-fast)] " +
+                    (item.id === selectedId
+                      ? "border-emerald bg-mint/40 dark:bg-navy-deep"
+                      : "border-mist hover:bg-mist/40 dark:border-navy dark:hover:bg-navy/30")
                   }
                 >
-                  <span
-                    aria-hidden="true"
-                    className="inline-block h-9 w-9 shrink-0 rounded-[10px] bg-emerald/80"
-                  />
-                  <span className="min-w-0 flex-1">
-                    <span className="block truncate text-sm font-medium">
-                      {item.title || t("vault.untitled")}
-                    </span>
-                    <span className="block truncate text-xs text-muted">
-                      {t(`type.${item.item_type}`)}
-                      {item.fields.username ? ` · ${item.fields.username}` : ""}
-                    </span>
+                  <Avatar name={item.title} />
+                  <span className="w-full truncate text-sm font-medium">
+                    {item.title || t("vault.untitled")}
                   </span>
-                  {item.favorite && (
-                    <Star
-                      className="h-4 w-4 fill-amber text-amber"
-                      aria-hidden="true"
-                    />
-                  )}
+                  <span className="w-full truncate text-xs text-muted">
+                    {t(`type.${item.item_type}`)}
+                  </span>
                 </button>
-              </li>
-            );
-          })}
-        </ul>
+              ))}
+            </div>
+          )}
+        </div>
       </section>
 
       <section className="flex-1 overflow-auto p-6">
         {selected ? (
           <ItemDetail
             item={selected}
+            backup={backup}
             onEdit={() => setEditing(selected)}
             onChanged={() => void refresh()}
           />
@@ -145,148 +261,244 @@ export function VaultView() {
         )}
       </section>
 
-      {editing && (
-        <ItemEditor
-          item={editing === "new" ? null : editing}
-          onClose={() => setEditing(null)}
-          onSaved={(saved) => {
-            setEditing(null);
-            void refresh().then(() => select(saved.id));
-          }}
-        />
-      )}
+      <ItemEditor
+        key={editing === "new" ? "new" : (editing?.id ?? "closed")}
+        item={editing === "new" ? null : editing}
+        open={editing !== null}
+        onClose={() => setEditing(null)}
+        onSaved={(saved) => {
+          setEditing(null);
+          void refresh().then(() => select(saved.id));
+        }}
+      />
     </div>
+  );
+}
+
+function ItemRow({
+  item,
+  active,
+  onSelect,
+  onEdit,
+  onChanged,
+}: {
+  item: ItemDto;
+  active: boolean;
+  onSelect: () => void;
+  onEdit: () => void;
+  onChanged: () => void;
+}) {
+  const { t } = useTranslation();
+  return (
+    <li
+      className={
+        "flex items-center gap-3 border-b border-mist/60 px-4 py-2 dark:border-navy/60 " +
+        (active
+          ? "bg-mint/40 dark:bg-navy-deep"
+          : "hover:bg-mist/40 dark:hover:bg-navy/30")
+      }
+    >
+      <button
+        type="button"
+        onClick={onSelect}
+        className="flex min-w-0 flex-1 items-center gap-3 text-start"
+      >
+        <Avatar name={item.title} />
+        <span className="min-w-0 flex-1">
+          <span className="block truncate text-sm font-medium">
+            {item.title || t("vault.untitled")}
+          </span>
+          <span className="block truncate text-xs text-muted">
+            {subtitleFor(item)}
+          </span>
+        </span>
+      </button>
+      <IconButton
+        label={t("actions.favorite")}
+        size="sm"
+        onClick={() => void api.toggleFavorite(item.id).then(onChanged)}
+      >
+        <Star
+          className={
+            "h-4 w-4 " + (item.favorite ? "fill-amber text-amber" : "")
+          }
+        />
+      </IconButton>
+      <Menu
+        label={t("actions.edit")}
+        trigger={<MoreVertical className="h-4 w-4" />}
+        items={[
+          {
+            id: "edit",
+            label: t("actions.edit"),
+            icon: <Pencil className="h-4 w-4" />,
+            onSelect: onEdit,
+          },
+          {
+            id: "delete",
+            label: t("actions.delete"),
+            icon: <Trash2 className="h-4 w-4" />,
+            danger: true,
+            onSelect: () => void api.deleteItem(item.id).then(onChanged),
+          },
+        ]}
+      />
+    </li>
   );
 }
 
 function ItemDetail({
   item,
+  backup,
   onEdit,
   onChanged,
 }: {
   item: ItemDto;
+  backup: { has: boolean; text: string | null };
   onEdit: () => void;
   onChanged: () => void;
 }) {
   const { t } = useTranslation();
-  const { copy, copiedField, secondsLeft } = useClipboard();
+  const { copy } = useClipboard();
   const clearSeconds = useSettingsStore((state) => state.clipboardClearSeconds);
   const [revealed, setRevealed] = useState<Record<string, boolean>>({});
   const specs = FIELD_SCHEMA[item.item_type];
 
-  const doCopy = (key: string, value: string) =>
-    void copy(key, value, clearSeconds);
+  const doCopy = async (field: string, value: string) => {
+    const ok = await copy(field, value, clearSeconds);
+    if (ok)
+      toast(t("common.copiedClearing", { seconds: clearSeconds }), "emerald");
+  };
 
   return (
-    <div className="mx-auto max-w-2xl space-y-6">
+    <div className="mx-auto max-w-2xl space-y-4">
       <header className="flex items-start justify-between gap-4">
-        <div>
-          <h2 className="text-2xl font-semibold">
-            {item.title || t("vault.untitled")}
-          </h2>
-          <p className="text-sm text-muted">{t(`type.${item.item_type}`)}</p>
+        <div className="flex items-center gap-4">
+          <Avatar name={item.title} size={56} />
+          <div>
+            <h2 className="text-title font-semibold">
+              {item.title || t("vault.untitled")}
+            </h2>
+            <p className="text-sm text-muted">
+              {t(`type.${item.item_type}`)} · {t("home.vault")}
+            </p>
+          </div>
         </div>
-        <div className="flex gap-2">
-          <button
-            type="button"
-            aria-label={t("actions.favorite")}
-            onClick={() =>
-              void api.toggleFavorite(item.id).then(() => onChanged())
-            }
-            className="rounded-vault border border-mist p-2 dark:border-navy"
+        <div className="flex gap-1">
+          <IconButton
+            label={t("actions.favorite")}
+            onClick={() => void api.toggleFavorite(item.id).then(onChanged)}
           >
             <Star
               className={
-                "h-4 w-4 " +
-                (item.favorite ? "fill-amber text-amber" : "text-muted")
+                "h-4 w-4 " + (item.favorite ? "fill-amber text-amber" : "")
               }
             />
-          </button>
-          <button
-            type="button"
-            onClick={onEdit}
-            className="flex items-center gap-2 rounded-vault border border-mist px-3 py-2 text-sm dark:border-navy"
+          </IconButton>
+          <IconButton label={t("actions.edit")} onClick={onEdit}>
+            <Pencil className="h-4 w-4" />
+          </IconButton>
+          <IconButton
+            label={t("actions.delete")}
+            onClick={() => void api.deleteItem(item.id).then(onChanged)}
           >
-            <Pencil className="h-4 w-4" /> {t("actions.edit")}
-          </button>
-          <button
-            type="button"
-            onClick={() => void api.deleteItem(item.id).then(() => onChanged())}
-            className="flex items-center gap-2 rounded-vault border border-mist px-3 py-2 text-sm text-amber dark:border-navy"
-          >
-            <Trash2 className="h-4 w-4" /> {t("actions.delete")}
-          </button>
+            <Trash2 className="h-4 w-4" />
+          </IconButton>
         </div>
       </header>
 
-      <dl className="space-y-3">
-        {specs.map((spec) => {
-          const value = item.fields[spec.key] ?? "";
-          if (!value) return null;
-          const shown =
-            spec.secret && !revealed[spec.key]
-              ? "•".repeat(Math.min(value.length, 16))
-              : value;
-          return (
-            <div
-              key={spec.key}
-              className="rounded-vault border border-mist p-3 dark:border-navy"
-            >
-              <dt className="text-xs text-muted">{t(spec.labelKey)}</dt>
-              <dd className="mt-1 flex items-center justify-between gap-2">
-                <span className="break-all text-sm tnum">{shown}</span>
-                <span className="flex shrink-0 gap-1">
-                  {spec.secret && (
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setRevealed((previous) => ({
-                          ...previous,
-                          [spec.key]: !previous[spec.key],
-                        }))
-                      }
-                      className="rounded p-1 text-xs text-muted hover:text-ink dark:hover:text-porcelain"
-                    >
-                      {revealed[spec.key]
+      {specs.map((spec) => {
+        const value = item.fields[spec.key] ?? "";
+        if (!value) return null;
+        const shown =
+          spec.secret && !revealed[spec.key]
+            ? "•".repeat(Math.min(value.length, 18))
+            : value;
+        return (
+          <Card key={spec.key} className="p-3">
+            <div className="flex items-center justify-between">
+              <span className="text-2xs text-muted">{t(spec.labelKey)}</span>
+              <span className="flex items-center gap-1">
+                {spec.secret && (
+                  <IconButton
+                    label={
+                      revealed[spec.key]
                         ? t("actions.hide")
-                        : t("actions.reveal")}
-                    </button>
-                  )}
-                  <button
-                    type="button"
-                    aria-label={t("actions.copy")}
-                    onClick={() => doCopy(spec.key, value)}
-                    className="rounded p-1 text-muted hover:text-ink dark:hover:text-porcelain"
+                        : t("actions.reveal")
+                    }
+                    size="sm"
+                    onClick={() =>
+                      setRevealed((previous) => ({
+                        ...previous,
+                        [spec.key]: !previous[spec.key],
+                      }))
+                    }
                   >
-                    <Copy className="h-4 w-4" />
-                  </button>
-                </span>
-              </dd>
-              {copiedField === spec.key && (
-                <p role="status" className="mt-1 text-xs text-emerald">
-                  {t("common.copiedClearing", { seconds: secondsLeft })}
-                </p>
-              )}
+                    {revealed[spec.key] ? (
+                      <EyeOff className="h-4 w-4" />
+                    ) : (
+                      <Eye className="h-4 w-4" />
+                    )}
+                  </IconButton>
+                )}
+                {spec.link && (
+                  <IconButton
+                    label={t("actions.open")}
+                    size="sm"
+                    onClick={() => void openUrl(value).catch(() => undefined)}
+                  >
+                    <ExternalLink className="h-4 w-4" />
+                  </IconButton>
+                )}
+                <IconButton
+                  label={t("actions.copy")}
+                  size="sm"
+                  onClick={() => void doCopy(spec.key, value)}
+                >
+                  <Copy className="h-4 w-4" />
+                </IconButton>
+              </span>
             </div>
-          );
-        })}
-        {item.notes && (
-          <div className="rounded-vault border border-mist p-3 dark:border-navy">
-            <dt className="text-xs text-muted">{t("fields.notes")}</dt>
-            <dd className="mt-1 whitespace-pre-wrap text-sm">{item.notes}</dd>
-          </div>
-        )}
-      </dl>
+            <div className="mt-1 break-all text-sm tnum">{shown}</div>
+          </Card>
+        );
+      })}
+
+      {item.notes && (
+        <Card className="p-3">
+          <span className="text-2xs text-muted">{t("fields.notes")}</span>
+          <div className="mt-1 whitespace-pre-wrap text-sm">{item.notes}</div>
+        </Card>
+      )}
+
+      <Card
+        tone="raised"
+        className="flex items-center gap-3 border-emerald/40 p-4"
+      >
+        <span className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-emerald/12 text-emerald">
+          <ExternalLink className="h-5 w-5" aria-hidden="true" />
+        </span>
+        <div className="flex-1">
+          <p className="text-sm font-medium text-emerald">
+            {backup.has ? t("home.backupVerified") : t("home.noBackup")}
+          </p>
+          <p className="text-xs text-muted">
+            {t("home.lastBackup")}: {backup.text ?? t("home.noBackup")}
+          </p>
+        </div>
+      </Card>
     </div>
   );
 }
 
 function ItemEditor({
   item,
+  open,
   onClose,
   onSaved,
 }: {
   item: ItemDto | null;
+  open: boolean;
   onClose: () => void;
   onSaved: (saved: ItemDto) => void;
 }) {
@@ -297,8 +509,10 @@ function ItemEditor({
   const [fields, setFields] = useState<Record<string, string>>(
     item?.fields ?? {},
   );
+  const [favorite, setFavorite] = useState(item?.favorite ?? false);
   const [showGenerator, setShowGenerator] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
 
   const specs = FIELD_SCHEMA[type];
 
@@ -308,7 +522,9 @@ function ItemEditor({
       title: title || t("vault.untitled"),
       notes,
       fields,
+      favorite,
     };
+    setBusy(true);
     try {
       const saved = item
         ? await api.updateItem(item.id, input)
@@ -316,114 +532,96 @@ function ItemEditor({
       onSaved(saved);
     } catch (err) {
       setError(String(err));
+    } finally {
+      setBusy(false);
     }
   };
 
   return (
-    <div
-      role="dialog"
-      aria-modal="true"
-      className="fixed inset-0 z-20 flex items-center justify-center bg-midnight/50 p-4"
+    <Dialog
+      open={open}
+      onClose={onClose}
+      title={item ? t("actions.edit") : t("actions.new")}
+      footer={
+        <>
+          <Button variant="secondary" onClick={onClose}>
+            {t("actions.cancel")}
+          </Button>
+          <Button onClick={() => void save()} disabled={busy}>
+            {t("actions.save")}
+          </Button>
+        </>
+      }
     >
-      <div className="max-h-full w-full max-w-lg overflow-auto rounded-vault bg-porcelain p-6 dark:bg-navy">
-        <h2 className="text-lg font-semibold">
-          {item ? t("actions.edit") : t("actions.new")}
-        </h2>
-
+      <div className="space-y-3">
         {!item && (
-          <label className="mt-4 block text-sm">
-            {t("fields.type")}
-            <select
-              value={type}
-              onChange={(event) => setType(event.target.value as ItemType)}
-              className="mt-1 w-full rounded-vault border border-mist bg-transparent px-3 py-2 dark:border-navy"
-            >
-              {ITEM_TYPES.map((option) => (
-                <option key={option} value={option}>
-                  {t(`type.${option}`)}
-                </option>
-              ))}
-            </select>
-          </label>
+          <Select
+            label={t("fields.type")}
+            value={type}
+            onChange={(event) => setType(event.target.value as ItemType)}
+          >
+            {ITEM_TYPES.map((option) => (
+              <option key={option} value={option}>
+                {t(`type.${option}`)}
+              </option>
+            ))}
+          </Select>
         )}
 
-        <label className="mt-3 block text-sm">
-          {t("fields.title")}
-          <input
-            value={title}
-            onChange={(event) => setTitle(event.target.value)}
-            className="mt-1 w-full rounded-vault border border-mist bg-transparent px-3 py-2 dark:border-navy"
-          />
-        </label>
+        <Input
+          label={t("fields.title")}
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+        />
 
         {specs.map((spec) => (
-          <label key={spec.key} className="mt-3 block text-sm">
-            {t(spec.labelKey)}
-            <div className="mt-1 flex gap-2">
-              <input
-                type={spec.secret ? "password" : "text"}
-                value={fields[spec.key] ?? ""}
-                onChange={(event) =>
-                  setFields((previous) => ({
-                    ...previous,
-                    [spec.key]: event.target.value,
-                  }))
-                }
-                className="w-full rounded-vault border border-mist bg-transparent px-3 py-2 dark:border-navy"
-              />
-              {spec.secret && (
-                <button
-                  type="button"
-                  onClick={() => setShowGenerator((v) => !v)}
-                  className="shrink-0 rounded-vault border border-mist px-3 text-sm dark:border-navy"
-                >
-                  {t("actions.generate")}
-                </button>
-              )}
-            </div>
-          </label>
+          <div key={spec.key} className="flex items-end gap-2">
+            <Input
+              label={t(spec.labelKey)}
+              type={spec.secret ? "password" : "text"}
+              value={fields[spec.key] ?? ""}
+              onChange={(event) =>
+                setFields((previous) => ({
+                  ...previous,
+                  [spec.key]: event.target.value,
+                }))
+              }
+            />
+            {spec.secret && (
+              <Button
+                variant="secondary"
+                onClick={() => setShowGenerator((v) => !v)}
+              >
+                {t("actions.generate")}
+              </Button>
+            )}
+          </div>
         ))}
 
         {showGenerator && (
-          <div className="mt-3">
-            <GeneratorPanel
-              onUse={(value) => {
-                setFields((previous) => ({ ...previous, password: value }));
-                setShowGenerator(false);
-              }}
-            />
-          </div>
+          <GeneratorPanel
+            onUse={(value) => {
+              setFields((previous) => ({ ...previous, password: value }));
+              setShowGenerator(false);
+            }}
+          />
         )}
 
-        <label className="mt-3 block text-sm">
-          {t("fields.notes")}
-          <textarea
-            value={notes}
-            onChange={(event) => setNotes(event.target.value)}
-            rows={3}
-            className="mt-1 w-full rounded-vault border border-mist bg-transparent px-3 py-2 dark:border-navy"
-          />
-        </label>
+        <Textarea
+          label={t("fields.notes")}
+          rows={3}
+          value={notes}
+          onChange={(e) => setNotes(e.target.value)}
+        />
+        <Checkbox
+          checked={favorite}
+          onChange={(e) => setFavorite(e.target.checked)}
+        >
+          {t("actions.favorite")}
+        </Checkbox>
 
-        {error && <p className="mt-3 text-sm text-amber">{error}</p>}
-
-        <div className="mt-6 flex justify-end gap-2">
-          <button
-            type="button"
-            onClick={onClose}
-            className="rounded-vault border border-mist px-4 py-2 text-sm dark:border-navy"
-          >
-            {t("actions.cancel")}
-          </button>
-          <button
-            type="button"
-            onClick={() => void save()}
-            className="min-h-10 rounded-vault bg-emerald px-4 py-2 text-sm font-medium text-white"
-          >
-            {t("actions.save")}
-          </button>
-        </div>
+        {error && <p className="text-sm text-amber">{error}</p>}
       </div>
-    </div>
+    </Dialog>
   );
 }
