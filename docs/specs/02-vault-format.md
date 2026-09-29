@@ -82,29 +82,22 @@ only difference is operational: a backup is a point-in-time copy of the containe
 
 ## 5. Record store
 
-Items are stored as length-prefixed encrypted records. Each record contains:
+Items are stored as a single encrypted graph. The complete `VaultData`
+(schema version, folders, items and their revision history) is serialized and
+sealed with the DEK into the container payload.
 
-```
-record = {
-  id,           // random UUID
-  type,         // login | note | card | identity | totp
-  parent,       // folder/collection id or null
-  favorite,     // bool
-  created_at, updated_at,  // timestamps
-  fields,       // type-specific encrypted field map
-  history,      // prior revisions (bounded)
-  attachments,  // optional, encrypted blobs
-}
-```
-
-- **Every field in `fields` is encrypted**, including titles, URLs, usernames,
-  tags, and notes.
-- The store is backed by SQLite on disk, but SQLite must **not** be relied on for
-  confidentiality on its own: record bodies are AEAD ciphertext, and key/metadata
-  design is explicit. (Optionally the whole DB file can live inside an encrypted
-  container; the record-level scheme is authoritative.)
-- **Search** runs over decrypted-in-memory records while unlocked; no plaintext
-  index is persisted. Rebuildable in-memory indexes only.
+- **Every field is encrypted**, including titles, URLs, usernames, tags, notes
+  and TOTP seeds, because the whole graph is one AEAD payload.
+- **No plaintext index is persisted.** Search runs over the decrypted graph in
+  memory while unlocked; indexes are rebuilt on unlock and never written to disk.
+- This single-payload design is deliberately simple and portable. If the vault
+  grows very large, a future format version may move to per-record envelopes
+  (each record sealed under the DEK with counter-derived nonces) backed by
+  SQLite, with record bodies still AEAD-encrypted. That change is a versioned
+  migration and does not alter the key model.
+- `schema_version` in the payload is independent of the container
+  `format_version`, so data-shape migrations and format migrations are tracked
+  separately.
 
 ## 6. Backup container
 

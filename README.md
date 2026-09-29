@@ -6,10 +6,10 @@ Aster Vault is a calm, private, **local-first Windows password manager**. Your
 secrets stay on your device; your encrypted backups stay portable and
 recoverable. No account, no cloud, no hidden uploads.
 
-> **Status: early development (Phase 0/1).** The cryptographic core and the app
-> shell exist and are tested; most screens and features are still being built.
-> Do **not** trust this early build with real passwords. See
-> [Limitations](#limitations).
+> **Status: early development.** The cryptographic core, encrypted store,
+> portable backups, recovery CLI, and the main app screens are built and tested.
+> The application is not yet packaged (requires the icon set) and has **not** had
+> an independent security review. See [Limitations](#limitations).
 
 ## What it is (Release 1)
 
@@ -102,8 +102,8 @@ docs/reference/          product brief + UI mockup
 - Release 1 is offline only. No browser autofill, passkeys, aliases, or cloud
   sync (these are separately scoped: see
   [`docs/specs/06-browser-extension-r2.md`](docs/specs/06-browser-extension-r2.md)).
-- Several screens are still scaffolds; features are implemented phase by phase
-  ([`docs/specs/05-implementation-plan.md`](docs/specs/05-implementation-plan.md)).
+- The desktop app is packaged by the Windows (MSVC) release workflow; native
+  launch validation has not been performed on this Linux development box.
 
 ## Roadmap
 

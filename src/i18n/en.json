@@ -17,7 +17,8 @@
   "status": {
     "locked": "Locked",
     "unlocked": "Unlocked",
-    "backedUpHoursAgo": "Backed up {{count}} hours ago"
+    "backedUpHoursAgo": "Backed up {{count}} hours ago",
+    "neverBackedUp": "No backup yet"
   },
   "lock": {
     "title": "Your vault is locked.",
@@ -27,9 +28,95 @@
     "hide": "Hide password",
     "unlock": "Unlock",
     "useRecoveryKey": "Use recovery key",
+    "usePassword": "Use master password",
     "recoveryKey": "Recovery key",
     "failed": "This password did not unlock the vault.",
-    "keepKeySeparate": "Keep your recovery key somewhere separate."
+    "keepKeySeparate": "Keep your recovery key somewhere separate.",
+    "chooseDifferent": "Open a different vault"
+  },
+  "onboarding": {
+    "welcome": "Welcome to Aster Vault",
+    "welcomeBody": "A calm, private password manager. Your secrets stay on your device.",
+    "chooseLocation": "Choose where to store your vault",
+    "location": "Vault file",
+    "browse": "Browse…",
+    "createMasterPassword": "Create a strong master password",
+    "passwordHint": "At least 8 characters. This password is never stored anywhere.",
+    "create": "Create vault",
+    "generateRecoveryKey": "Save your recovery key",
+    "recoveryIntro": "This key can unlock your vault if you forget your master password. Keep it somewhere separate.",
+    "recoveryConfirm": "I have stored my recovery key safely",
+    "testFirstBackup": "Create and test your first backup",
+    "backupIntro": "Backups are portable and encrypted. Choose a folder for them.",
+    "chooseBackupFolder": "Choose a backup folder",
+    "createBackup": "Create backup now",
+    "skip": "Skip for now",
+    "next": "Next",
+    "back": "Back",
+    "done": "Your vault is ready",
+    "finish": "Start using Aster Vault"
+  },
+  "vault": {
+    "search": "Search items, websites, or notes...",
+    "searchShortcut": "Ctrl + K",
+    "empty": "No items yet. Create your first one.",
+    "selectItem": "Select an item to see its details.",
+    "untitled": "Untitled",
+    "reused": "{{count}} reused password(s)"
+  },
+  "fields": {
+    "title": "Title",
+    "username": "Username",
+    "password": "Password",
+    "url": "Website",
+    "notes": "Notes",
+    "number": "Card number",
+    "expiry": "Expiry",
+    "cvv": "CVV",
+    "holder": "Cardholder",
+    "fullName": "Full name",
+    "email": "Email",
+    "phone": "Phone",
+    "address": "Address",
+    "secret": "TOTP secret",
+    "tags": "Tags",
+    "folder": "Folder",
+    "type": "Type"
+  },
+  "actions": {
+    "new": "New item",
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "favorite": "Favorite",
+    "generate": "Generate",
+    "reveal": "Reveal",
+    "hide": "Hide",
+    "copy": "Copy",
+    "open": "Open",
+    "lock": "Lock",
+    "back": "Back"
+  },
+  "type": {
+    "login": "Login",
+    "note": "Note",
+    "card": "Card",
+    "identity": "Identity",
+    "totp": "TOTP"
+  },
+  "generator": {
+    "title": "Password generator",
+    "length": "Length",
+    "lowercase": "Lowercase",
+    "uppercase": "Uppercase",
+    "digits": "Numbers",
+    "symbols": "Symbols",
+    "excludeAmbiguous": "Exclude look-alike characters",
+    "passphrase": "Passphrase mode",
+    "words": "Words",
+    "strength": "Strength",
+    "use": "Use this password"
   },
   "backup": {
     "title": "Backup",
@@ -38,16 +125,35 @@
     "testBackup": "Test your backup",
     "restore": "Restore on this device",
     "couldNotVerify": "This file could not be verified.",
-    "create": "Create backup now"
+    "create": "Create backup now",
+    "folder": "Backup folder",
+    "chooseFolder": "Choose folder",
+    "versions": "Backup versions",
+    "noBackups": "No backups yet.",
+    "restoreIntro": "Restore writes to a new vault file, then you can unlock it. Your current vault is never overwritten.",
+    "destination": "Restore to new vault file",
+    "chooseDestination": "Choose destination",
+    "passwordForRestore": "Master password or recovery key of the backup",
+    "restored": "Restored {{count}} items to {{path}}"
+  },
+  "import": {
+    "title": "Import",
+    "intro": "Proton Pass and CSV exports may be plaintext. Everything stays on this device and is never uploaded. Delete the source export afterward.",
+    "chooseFile": "Choose export file",
+    "source": "Source",
+    "genericCsv": "Generic CSV",
+    "protonPass": "Proton Pass CSV",
+    "import": "Import items",
+    "result": "Imported {{count}} items"
   },
   "common": {
-    "search": "Search items, websites, or notes...",
-    "searchShortcut": "Ctrl + K",
+    "search": "Search",
     "copy": "Copy",
-    "copiedClearing": "Copied — will clear in {{seconds}}s",
+    "copiedClearing": "Copied — clears in {{seconds}}s",
     "cancel": "Cancel",
     "confirm": "Confirm",
-    "close": "Close"
+    "close": "Close",
+    "error": "Something went wrong."
   },
   "settings": {
     "title": "Settings",
@@ -56,16 +162,18 @@
     "arabic": "العربية",
     "security": "Security",
     "appearance": "Appearance",
-    "autoLock": "Auto-lock after inactivity",
-    "clipboardClear": "Clear clipboard after",
+    "autoLock": "Auto-lock after inactivity (minutes)",
+    "clipboardClear": "Clear clipboard after (seconds)",
     "reducedMotion": "Reduce motion",
-    "about": "About"
-  },
-  "onboarding": {
-    "welcome": "Welcome to Aster Vault",
-    "createMasterPassword": "Create a strong master password",
-    "generateRecoveryKey": "Generate your recovery key",
-    "testFirstBackup": "Create and test your first backup",
-    "done": "Your vault is ready"
+    "changePassword": "Change master password",
+    "currentPassword": "Current password",
+    "newPassword": "New password",
+    "changePasswordAction": "Change password",
+    "changed": "Master password changed.",
+    "about": "About",
+    "version": "Version",
+    "formatVersion": "Vault format version",
+    "limitations": "This build has not had an independent security review. Do not store your most sensitive passwords yet.",
+    "dangerZone": "Danger zone"
   }
 }

@@ -132,7 +132,10 @@ export function unlockVaultWithRecovery(
   path: string,
   recoveryKey: string,
 ): Promise<VaultStatus> {
-  return invoke<VaultStatus>("unlock_vault_with_recovery", { path, recoveryKey });
+  return invoke<VaultStatus>("unlock_vault_with_recovery", {
+    path,
+    recoveryKey,
+  });
 }
 
 /** Lock the vault. */
@@ -195,7 +198,10 @@ export function changeMasterPassword(
   currentPassword: string,
   newPassword: string,
 ): Promise<void> {
-  return invoke<void>("change_master_password", { currentPassword, newPassword });
+  return invoke<void>("change_master_password", {
+    currentPassword,
+    newPassword,
+  });
 }
 
 /** Generate a password. */
@@ -204,7 +210,9 @@ export function generatePassword(options: PasswordOptions): Promise<string> {
 }
 
 /** Generate a passphrase. */
-export function generatePassphrase(options: PassphraseOptions): Promise<string> {
+export function generatePassphrase(
+  options: PassphraseOptions,
+): Promise<string> {
   return invoke<string>("generate_passphrase", { options });
 }
 
@@ -252,6 +260,9 @@ export function secondsSinceLatestBackup(dir: string): Promise<number | null> {
 }
 
 /** Apply backup retention. */
-export function applyBackupRetention(dir: string, keep: number): Promise<number> {
+export function applyBackupRetention(
+  dir: string,
+  keep: number,
+): Promise<number> {
   return invoke<number>("apply_backup_retention", { dir, keep });
 }

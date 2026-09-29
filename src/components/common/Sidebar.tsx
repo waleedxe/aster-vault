@@ -1,8 +1,10 @@
 import { useTranslation } from "react-i18next";
 import { Lock } from "lucide-react";
 
+import { useVaultStore, type View } from "../../stores/vaultStore";
+
 interface NavEntry {
-  id: string;
+  id: View;
   labelKey: string;
 }
 
@@ -13,18 +15,36 @@ const NAV: NavEntry[] = [
   { id: "notes", labelKey: "nav.notes" },
   { id: "cards", labelKey: "nav.cards" },
   { id: "identities", labelKey: "nav.identities" },
-  { id: "archive", labelKey: "nav.archive" },
   { id: "backup", labelKey: "nav.backup" },
   { id: "settings", labelKey: "nav.settings" },
 ];
 
-interface SidebarProps {
-  onLock: () => void;
-}
-
 /** Left navigation. Mirrors naturally under RTL via logical properties. */
-export function Sidebar({ onLock }: SidebarProps) {
+export function Sidebar({ onLock }: { onLock: () => void }) {
   const { t } = useTranslation();
+  const view = useVaultStore((state) => state.view);
+  const setView = useVaultStore((state) => state.setView);
+  const items = useVaultStore((state) => state.items);
+  const folders = useVaultStore((state) => state.folders);
+
+  const countFor = (id: View): number => {
+    switch (id) {
+      case "all":
+        return items.length;
+      case "favorites":
+        return items.filter((item) => item.favorite).length;
+      case "logins":
+        return items.filter((item) => item.item_type === "login").length;
+      case "notes":
+        return items.filter((item) => item.item_type === "note").length;
+      case "cards":
+        return items.filter((item) => item.item_type === "card").length;
+      case "identities":
+        return items.filter((item) => item.item_type === "identity").length;
+      default:
+        return 0;
+    }
+  };
 
   return (
     <nav
@@ -40,16 +60,35 @@ export function Sidebar({ onLock }: SidebarProps) {
       </div>
 
       <ul className="flex-1 space-y-1">
-        {NAV.map((entry) => (
-          <li key={entry.id}>
-            <button
-              type="button"
-              className="w-full rounded-vault px-3 py-2 text-start text-sm hover:bg-mint/60 focus-visible:outline-2 focus-visible:outline-emerald dark:hover:bg-midnight"
-            >
-              {t(entry.labelKey)}
-            </button>
+        {NAV.map((entry) => {
+          const active = view === entry.id;
+          const count = countFor(entry.id);
+          return (
+            <li key={entry.id}>
+              <button
+                type="button"
+                aria-current={active ? "page" : undefined}
+                onClick={() => setView(entry.id)}
+                className={
+                  "flex w-full items-center justify-between rounded-vault px-3 py-2 text-start text-sm focus-visible:outline-2 focus-visible:outline-emerald " +
+                  (active
+                    ? "bg-mint/70 font-medium dark:bg-midnight"
+                    : "hover:bg-mint/60 dark:hover:bg-midnight")
+                }
+              >
+                <span>{t(entry.labelKey)}</span>
+                {count > 0 && (
+                  <span className="text-xs text-muted tnum">{count}</span>
+                )}
+              </button>
+            </li>
+          );
+        })}
+        {folders.length > 0 && (
+          <li className="px-3 pt-3 text-xs uppercase tracking-wide text-muted">
+            {folders.length} folders
           </li>
-        ))}
+        )}
       </ul>
 
       <button

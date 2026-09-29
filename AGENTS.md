@@ -110,3 +110,30 @@ failures → continue. Never accumulate broken phases.
   5. **Gate green** (frontend): `typecheck`, `lint`, 4 Vitest tests, `vite build`.
   6. **Next:** Phase 2 — encrypted record store + item models (login/note/card/
      identity/TOTP), folders/collections, search, schema versioning.
+
+- **Session 2 — Phases 2–6 implemented:**
+  1. **Phase 2 — store/model:** item model (login/note/card/identity/TOTP),
+     folders, bounded revision history, CRUD, favorites, local search. Chose a
+     **single-file encrypted container** (whole `VaultData` graph sealed as one
+     AEAD payload; no plaintext index) over SQLite for portability and
+     reviewability — documented in `docs/specs/02-vault-format.md` §5.
+  2. **Phase 3 — backup/recovery:** atomic export, structural verify, inspect,
+     restore-to-new-vault, retention, backup age. Standalone `vault-recovery-cli`
+     (`version`/`verify`/`inspect`/`restore`, credentials via stdin only).
+  3. **Phase 4 — service + commands:** moved the service layer into
+     `vault-core::session` (testable without a GUI); full Tauri command surface
+     (create/unlock/lock, CRUD, folders, generator, strength/reuse, backup).
+  4. **Phase 4/5 — frontend:** onboarding wizard, wired unlock, vault list/detail/
+     editor, generator panel, backup center, restore flow, settings (auto-lock,
+     clipboard timer, reduced motion, language, change password), local CSV /
+     Proton Pass import. Auto-lock hook + clipboard-clear timer + masked fields.
+  5. **Phase 6 — import:** local CSV parser (generic + Proton Pass headers) with
+     plaintext warning; imported via the same create-item path.
+  6. **Tests:** 45 Rust tests + 9 frontend tests. Rust `fmt`/`clippy -D warnings`
+     green; frontend `format:check`/`lint`/`typecheck`/`test`/`build` green.
+  7. **Phase 7 — release prep:** generated an original Aster Vault icon set
+     (`assets/generate-icon.py` → `npm run tauri icon`), completing the last
+     requirement for the Windows (MSVC) release workflow to emit an installer.
+  8. **Still open:** native launch validation on Windows (the GUI crate is
+     checked on the Windows MSVC CI runner; no WebKitGTK locally) and the
+     external independent security review required by the release gate.

@@ -2,23 +2,52 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { LanguageSwitcher } from "../../components/common/LanguageSwitcher";
+import * as api from "../../lib/tauri";
+import {
+  getRememberedVaultPath,
+  pickExistingVault,
+  rememberVaultPath,
+} from "../../lib/paths";
 
-interface UnlockViewProps {
-  onUnlocked: () => void;
-}
-
-/**
- * Unlock screen.
- *
- * Phase 0 scaffold: this does not yet perform real key derivation. Phase 4 wires
- * it to `vault_core::unlock_with_password` / `unlock_with_recovery_key` through
- * the typed bridge. It intentionally performs no password handling yet.
- */
-export function UnlockView({ onUnlocked }: UnlockViewProps) {
+/** Unlock screen, wired to the real backend. */
+export function UnlockView({ onUnlocked }: { onUnlocked: () => void }) {
   const { t } = useTranslation();
-  const [password, setPassword] = useState("");
+  const [path, setPath] = useState<string>(getRememberedVaultPath() ?? "");
+  const [credential, setCredential] = useState("");
   const [revealed, setRevealed] = useState(false);
   const [useRecovery, setUseRecovery] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+
+  const chooseFile = async () => {
+    const chosen = await pickExistingVault();
+    if (chosen) {
+      setPath(chosen);
+      rememberVaultPath(chosen);
+    }
+  };
+
+  const unlock = async () => {
+    setError(null);
+    if (!path) {
+      setError(t("lock.chooseDifferent"));
+      return;
+    }
+    setBusy(true);
+    try {
+      if (useRecovery) {
+        await api.unlockVaultWithRecovery(path, credential);
+      } else {
+        await api.unlockVault(path, credential);
+      }
+      setCredential("");
+      onUnlocked();
+    } catch {
+      setError(t("lock.failed"));
+    } finally {
+      setBusy(false);
+    }
+  };
 
   return (
     <div className="flex h-full items-center justify-center p-6">
@@ -34,12 +63,27 @@ export function UnlockView({ onUnlocked }: UnlockViewProps) {
         <h1 className="text-2xl font-semibold">{t("lock.title")}</h1>
         <p className="mt-2 text-sm text-muted">{t("lock.subtitle")}</p>
 
+        <div className="mt-4 flex gap-2">
+          <input
+            value={path}
+            onChange={(event) => setPath(event.target.value)}
+            placeholder={t("onboarding.location")}
+            className="w-full rounded-vault border border-mist bg-transparent px-3 py-2 text-sm dark:border-navy"
+          />
+          <button
+            type="button"
+            onClick={() => void chooseFile()}
+            className="shrink-0 rounded-vault border border-mist px-3 text-sm dark:border-navy"
+          >
+            {t("onboarding.browse")}
+          </button>
+        </div>
+
         <form
-          className="mt-6 space-y-4"
+          className="mt-4 space-y-4"
           onSubmit={(event) => {
             event.preventDefault();
-            // Placeholder: real unlock arrives in Phase 4.
-            onUnlocked();
+            void unlock();
           }}
         >
           <div>
@@ -49,8 +93,8 @@ export function UnlockView({ onUnlocked }: UnlockViewProps) {
             <input
               id="credential"
               type={revealed ? "text" : "password"}
-              value={password}
-              onChange={(event) => setPassword(event.target.value)}
+              value={credential}
+              onChange={(event) => setCredential(event.target.value)}
               autoComplete="off"
               className="mt-1 w-full rounded-vault border border-mist bg-transparent px-3 py-2 text-sm focus-visible:outline-2 focus-visible:outline-emerald dark:border-navy"
             />
@@ -65,9 +109,16 @@ export function UnlockView({ onUnlocked }: UnlockViewProps) {
             {revealed ? t("lock.hide") : t("lock.reveal")}
           </label>
 
+          {error && (
+            <p role="alert" className="text-sm text-amber">
+              {error}
+            </p>
+          )}
+
           <button
             type="submit"
-            className="min-h-11 w-full rounded-vault bg-emerald px-4 py-2 font-medium text-white focus-visible:outline-2 focus-visible:outline-emerald"
+            disabled={busy}
+            className="min-h-11 w-full rounded-vault bg-emerald px-4 py-2 font-medium text-white disabled:opacity-50"
           >
             {t("lock.unlock")}
           </button>
@@ -77,7 +128,7 @@ export function UnlockView({ onUnlocked }: UnlockViewProps) {
             onClick={() => setUseRecovery((value) => !value)}
             className="w-full text-center text-sm text-muted underline hover:text-ink dark:hover:text-porcelain"
           >
-            {t("lock.useRecoveryKey")}
+            {useRecovery ? t("lock.usePassword") : t("lock.useRecoveryKey")}
           </button>
         </form>
       </div>
