@@ -137,3 +137,16 @@ failures → continue. Never accumulate broken phases.
   8. **Still open:** native launch validation on Windows (the GUI crate is
      checked on the Windows MSVC CI runner; no WebKitGTK locally) and the
      external independent security review required by the release gate.
+
+- **Session 3 — published:**
+  1. Created private GitHub repo **`waleedxe/aster-vault`**, pushed `main`.
+  2. CI (frontend + Rust) passed; tagged **`v0.1.0`**.
+  3. The **Windows (MSVC) release workflow passed** and produced:
+     `Aster.Vault_0.1.0_x64-setup.exe` (NSIS installer) and `aster-vault.exe`
+     (standalone). This is the **first real compile of the Tauri app crate** —
+     it built successfully on Windows.
+  4. Downloaded both artifacts to
+     `C:\Users\walee\Desktop\aster-vault-release\`.
+  5. **Next / open:** run the installer on Windows to validate launch and the
+     full flow; publish the draft release when ready; revoke the temporary token;
+     independent security review still required.
