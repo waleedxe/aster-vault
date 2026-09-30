@@ -15,6 +15,7 @@ each dependency, its license, and its purpose.
 | `serde` / `serde_json` | MIT OR Apache-2.0 | Container header serialization | yes |
 | `thiserror` | MIT OR Apache-2.0 | Error model | yes |
 | `base64` | MIT OR Apache-2.0 | Recovery-key display encoding | yes |
+| `uuid` | Apache-2.0 OR MIT | Item/folder identifiers | yes |
 | `getrandom` (transitive) | MIT OR Apache-2.0 | OS entropy source | yes |
 
 ## Desktop shell (`src-tauri`)
@@ -31,10 +32,22 @@ each dependency, its license, and its purpose.
 | Dependency | License | Purpose |
 |------------|---------|---------|
 | `react`, `react-dom` | MIT | UI |
+| `@tauri-apps/api` | MIT OR Apache-2.0 | Typed bridge to Tauri commands |
+| `@tauri-apps/plugin-dialog` | MIT OR Apache-2.0 | Native file/folder dialogs |
+| `@tauri-apps/plugin-opener` | MIT OR Apache-2.0 | Open a website in the default browser |
 | `i18next`, `react-i18next` | MIT | English/Arabic localization |
 | `zustand` | MIT | State management |
 | `lucide-react` | ISC | Icons |
 | `vite`, `typescript`, `vitest`, `tailwindcss`, `eslint`, `prettier` | MIT / Apache-2.0 / ISC | Build, test, and tooling |
+
+## Build tooling
+
+| Tool | License | Purpose |
+|------|---------|---------|
+| Python 3 (standard library only) | PSF-2.0 | `scripts/make-icon.py` composes the app icon from the brand mark |
+
+No image library or external rasterizer is bundled or required; the icon script
+uses only the Python standard library.
 
 ## Notes
 

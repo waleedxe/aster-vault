@@ -5,7 +5,7 @@
 > احتياطية مشفّرة قابلة للاستعادة.
 
 - **المستودع (خاص حاليًا):** https://github.com/waleedxe/aster-vault
-- **الإصدار الأول:** `v0.1.0` (مسودة/غير منشور بعد على صفحة Releases)
+- **الإصدارات:** `v0.1.0` و`v0.1.1` (مثبّتات ويندوز مبنية عبر CI؛ مسودات حتى تُنشر على صفحة Releases)
 - **الاسم مؤقت:** «خزنة أستر» / Aster Vault — يجب التحقق من العلامة التجارية والنطاقات قبل النشر.
 
 ---
@@ -56,6 +56,7 @@
 | محو المفاتيح | **zeroize** | مسح المفاتيح من الذاكرة عند القفل |
 | التسلسل | **serde / serde_json** | ترميز ترويسة الحاوية |
 | الأدوات | **thiserror · base64 · uuid** | الأخطاء · ترميز مفتاح الاستعادة · المعرّفات |
+| نظام التصميم | **مكوّنات `components/ui` + رموز Tailwind** | أزرار/حقول/بطاقات… موحّدة، وضع فاتح/داكن، تباين مطابق لـ WCAG-AA |
 
 جميع المكتبات برخص متسامحة (MIT/Apache-2.0). لا يوجد أي تشفير مكتوب يدويًا — كل شيء يعتمد
 على مكتبات مراجَعة. التفاصيل في `THIRD_PARTY_LICENSES.md`.
@@ -84,13 +85,18 @@ crates/vault-core          ← التشفير + الحاوية + المخزن + 
 
 ```text
 src/                          واجهة React
-  app/ components/ features/ stores/ hooks/ i18n/ lib/ types/
+  app/ (App, AppShell, معرض المكوّنات)
+  components/common/ · components/ui/   المكوّنات المشتركة + نظام التصميم
+  features/ (onboarding, unlock, vault, generator, import, backup, settings)
+  stores/ hooks/ lib/ i18n/ test/
 crates/vault-core/            التشفير والحاوية والمخزن والنسخ (بلا واجهة)
-  src/crypto/ container/ model/ store/ backup/ generator/ strength/ session.rs
+  src/crypto/ container/ model/ store/ backup/ generator.rs strength.rs session.rs
 crates/vault-recovery-cli/    أداة استعادة مستقلة (سطر أوامر)
-src-tauri/                    تطبيق Tauri (أوامر Rust)
-assets/                       مولّد الأيقونة + رمز المصدر
+src-tauri/                    تطبيق Tauri (أوامر Rust فقط)
+assets/brand/                 الشعار + مصدر الأيقونة
+scripts/make-icon.py          يبني مصدر الأيقونة من الشعار (Python قياسي فقط)
 docs/specs/                   نموذج التهديد · صيغة الخزنة · المعمارية · المخطط · الخطة
+docs/PROJECT-AR.md            هذا الدليل
 .github/workflows/            CI + الإصدار
 ```
 
@@ -128,7 +134,7 @@ npm run tauri build
 ```
 النواتج:
 - **المثبِّت (Next → Next → Install):**
-  `target\release\bundle\nsis\Aster Vault_0.1.0_x64-setup.exe`
+  `target\release\bundle\nsis\Aster Vault_0.1.1_x64-setup.exe`
 - **النسخة المحمولة (بلا تثبيت):**
   `target\release\aster-vault.exe`
 
@@ -139,17 +145,17 @@ npm run tauri build
 
 ### المسار ب — البناء عبر GitHub (هذا ما استخدمناه — الأسهل)
 1. ارفع الكود إلى فرع `main` (تم).
-2. أنشئ وسم إصدار وارفعه:
+2. أنشئ وسم إصدار وارفعه (مثال: الإصدار الحالي `v0.1.1`):
    ```bash
-   git tag v0.1.0
-   git push origin v0.1.0
+   git tag v0.1.1
+   git push origin v0.1.1
    ```
 3. يعمل سير عمل **Release** على جهاز ويندوز في GitHub ويبني:
-   - المثبِّت `Aster.Vault_0.1.0_x64-setup.exe`
+   - المثبِّت `Aster.Vault_0.1.1_x64-setup.exe`
    - النسخة المحمولة `aster-vault.exe`
    ويرفعها إلى صفحة **Releases** (كمسودة حتى تنشرها).
 
-هذا ما أنتج الإصدار `v0.1.0` الموجود لديك على سطح المكتب.
+هذا ما أنتج الإصدارين `v0.1.0` و`v0.1.1` الموجودين على سطح المكتب.
 
 ### المسار ج — CI للتحقق فقط
 عند أي `push` إلى `main` يعمل سير عمل **CI** (فحص الواجهة + lint/typecheck/tests + اختبارات
@@ -210,6 +216,7 @@ Rust + clippy).
 | `npm run tauri dev` | تشغيل التطبيق للتطوير |
 | `npm run tauri build` | بناء التطبيق + المثبِّت على ويندوز |
 | `npm run lint` / `typecheck` / `test` / `build` | فحص الواجهة |
+| `npm run icon:build` | إعادة توليد أيقونة التطبيق من الشعار |
 | `cargo test -p vault-core -p vault-recovery-cli` | اختبارات Rust |
 | `cargo run -p vault-recovery-cli -- version` | أداة الاستعادة المستقلة |
 | `cargo run -p vault-recovery-cli -- verify <ملف>` | فحص بنية نسخة احتياطية |
@@ -221,6 +228,8 @@ Rust + clippy).
 ## 7) ملاحظات مهمة وخارطة الطريق
 
 - **الخصوصية:** لا رفع، لا سحابة، لا تتبّع، ولا أي محتوى أسرار في القياسات. انظر `PRIVACY.md`.
+- **الشعار والأيقونة:** الشعار النهائي في `assets/brand/aster-mark.png`، وتُبنى أيقونة التطبيق عبر
+  `npm run icon:build`.
 - **التوقيع الرقمي:** التطبيق غير موقّع حاليًا، لذا قد يظهر تحذير SmartScreen مرة واحدة:
   More info → Run anyway. يمكن إضافة التوقيع لاحقًا.
 - **WebView2:** مطلوب، وهو مثبّت افتراضيًا في ويندوز 10/11.

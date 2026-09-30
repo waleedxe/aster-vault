@@ -146,9 +146,9 @@ is preserved until the new one is verified.
 | Password KDF | `argon2` (RustCrypto) | MIT/Apache-2.0 | RFC 9106 Argon2id |
 | CSPRNG | `rand` / `getrandom` | MIT/Apache-2.0 | OS entropy source |
 | Constant-time compare | `subtle` | MIT/Apache-2.0 | tag/key comparisons |
-| Secret zeroization | `zeroize` / `secrecy` | MIT/Apache-2.0 | memory hygiene |
+| Secret zeroization | `zeroize` | MIT/Apache-2.0 | memory hygiene |
 | Serialization | `serde` + `serde_json`/`bincode` | MIT/Apache-2.0 | record store |
-| Storage | `rusqlite` (bundled) or file-based store | MIT | TBD in Phase 2 |
+| Storage | file-based encrypted container | — | implemented; the graph is one sealed payload |
 
 Every engine/library recorded here — crate, license, purpose, bundled? — is also
 mirrored into `THIRD_PARTY_LICENSES.md`.

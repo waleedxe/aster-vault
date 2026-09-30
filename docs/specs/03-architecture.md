@@ -1,10 +1,10 @@
 # Aster Vault — Architecture
 
-Status: Phase 0 specification.
+Status: implemented (Release 1). Reflects the code as of `v0.1.1`.
 
 ## 1. Guiding rule
 
-> UI → Tauri command → Vault service → engine/crypto adapter (core crate) → primitive.
+> UI → Tauri command → `vault-core::session` → `vault-core` engine → reviewed primitive.
 
 The React UI never touches cryptography directly. The Tauri layer is thin. All
 security-critical logic lives in a standalone Rust crate, `vault-core`, that has
@@ -14,48 +14,50 @@ adapter pattern from the reference PDF toolkit and keeps the crypto reviewable.
 ## 2. Repository layout
 
 ```text
-src/                         # React 19 + TypeScript (strict) frontend
-  app/                       # App root, shell, router
+src/                          # React 19 + TypeScript (strict) frontend
+  app/                        # App, AppShell, GalleryView (dev component gallery)
   components/
-    common/                  # shared primitives (Sidebar, LanguageSwitcher, ...)
-    vault/                   # item list, item detail, item editor
-    file-drop/               # import/backup file pickers
+    common/                   # Sidebar, LanguageSwitcher
+    ui/                       # design-system primitives (see §3.1)
   features/
-    onboarding/              # setup wizard: master password, recovery key, first backup
-    unlock/                  # unlock screen
-    vault/                   # list + detail + search
-    generator/               # password & passphrase generator
-    import/                  # Proton Pass / CSV import
-    backup/                  # backup center (create, schedule, verify, restore)
-    settings/                # security, lock behaviour, appearance
-  stores/                    # Zustand stores
-  hooks/
-  lib/                       # typed Tauri bridge, path helpers, dialogs
-  i18n/                      # en.json, ar.json, direction helpers
-  types/
-src-tauri/                   # thin Tauri 2 app shell
+    onboarding/               # setup wizard: master password, recovery key, first backup
+    unlock/                   # unlock screen (password or recovery key)
+    vault/                    # list + grid + detail + item editor
+    generator/                # password & passphrase generator panel
+    import/                   # Proton Pass / CSV import (+ local CSV parser)
+    backup/                   # backup center: create, verify, restore
+    settings/                 # security, appearance, language, about
+  stores/                     # Zustand: vaultStore, settingsStore, themeStore
+  hooks/                      # useAutoLock, useClipboard
+  lib/                        # typed Tauri bridge (tauri.ts), paths, toast, cx
+  i18n/                       # en.json, ar.json, index, direction, changeLanguage
+  test/                       # vitest setup
+src-tauri/                    # thin Tauri 2 app shell
   src/
-    commands/                # #[tauri::command] surface only
-    vault/                   # service layer: calls vault-core, owns app state
-    lib.rs                   # plugin + command registration
+    commands/mod.rs           # #[tauri::command] surface only
+    lib.rs                    # plugin + command registration
 crates/
-  vault-core/                # crypto + container + storage (NO Tauri)
+  vault-core/                 # crypto + container + store + backup (NO Tauri)
     src/
-      crypto/                # kdf, aead, keys, rng, zeroize
-      container/             # header, wrap, record store, format versioning
-      store/                 # persistence (SQLite or file), repositories
-      model/                 # item types, folders, history
-      backup/                # atomic export, retention, verify, restore
-      recovery/              # standalone recovery path
+      crypto/                 # aead.rs, kdf.rs, keys.rs, rng.rs
+      container/              # header.rs, format.rs, vault.rs (framing + key wraps)
+      model/                  # item types, folders, history, VaultData
+      store/                  # Vault: open/create/save, CRUD, search, atomic write
+      backup/                 # export, verify, restore, retention, age
+      generator.rs            # password + passphrase generation
+      strength.rs             # local strength + reuse analysis
+      session.rs              # VaultSession service layer + app DTOs (GUI-free)
       error.rs
-    tests/                   # round-trip, tamper, wrong-password, migration
-crates/
-  vault-recovery-cli/        # standalone CLI: open/verify/restore without the UI
-assets/fonts/                # if an Arabic/glyph font is ever needed
-tests/fixtures/              # legally safe fixtures (generated, never secret)
-docs/specs/                  # this specification set
-docs/reference/              # product brief + UI mockup
-.github/workflows/           # CI + Windows release
+    tests/                    # crypto, store, backup, generator, session
+  vault-recovery-cli/         # standalone CLI: verify/inspect/restore without the UI
+assets/
+  brand/aster-mark.png        # brand mark (transparent)
+  icon-source.png             # mark composited on the tile (icon input)
+scripts/make-icon.py          # builds icon-source.png (stdlib only)
+docs/specs/                   # this specification set
+docs/reference/               # product brief + UI mockup + brand source
+docs/PROJECT-AR.md            # Arabic project guide
+.github/workflows/            # CI + Windows release
 ```
 
 ## 3. Layers
@@ -63,6 +65,11 @@ docs/reference/              # product brief + UI mockup
 ### 3.1 Frontend (`src/`)
 - React 19 + TypeScript (strict, incl. `exactOptionalPropertyTypes`), Vite,
   Tailwind CSS v4, Zustand, i18next/react-i18next.
+- **Design system** in `components/ui`: Button, IconButton, Input, Textarea,
+  Select, Checkbox, Switch, Card, Badge, Spinner, Avatar, Menu, Dialog, Tabs,
+  Toast/Toaster, EmptyState, ErrorBanner, Logo. Tokens live in `src/index.css`
+  (palette, radii, elevation, type scale, motion) with class-based light/dark
+  theming. A dev-only **component gallery** is reachable at `#gallery`.
 - English + Arabic with full RTL/LTR switching and persisted language.
 - **No crypto.** Secrets received from the backend are held only transiently and
   cleared; the frontend is not a safe long-term store.
@@ -71,9 +78,12 @@ docs/reference/              # product brief + UI mockup
 
 ### 3.2 Tauri shell (`src-tauri/`)
 - Registers plugins (dialog, opener) and commands.
-- `commands/` are thin: validate input, call the service, map errors, return DTOs.
-- `vault/` service owns the in-memory unlocked state, the auto-lock timer, and
-  clipboard clearing. It never reimplements crypto.
+- `commands/` are thin: validate input, call `vault-core::session`, map errors,
+  return DTOs.
+- The unlocked-vault session (`VaultSession`) and its DTOs live in
+  `vault-core::session` — GUI-free, so the whole service layer is tested without
+  Tauri. `VaultSession` owns the in-memory vault, the idle auto-lock timer, and
+  drops key material on `lock()`.
 
 ### 3.3 Core (`crates/vault-core`)
 - The single place that performs cryptography, container (de)serialization,
@@ -88,38 +98,36 @@ docs/reference/              # product brief + UI mockup
 ```text
 create vault:   master password → Argon2id → KEK → wrap(random DEK)
                 generate RK    → wrap DEK   → show RK once, confirm storage
-unlock:         master password → KEK → unwrap DEK → decrypt record store
-item CRUD:      UI → command → service → vault-core (encrypt record) → store
-backup:         service → vault-core.backup.export (atomic, validated) → file
-restore:        file + password/RK → decrypt to NEW vault → verify → preview → confirm → swap
-auto-lock:      timer/session-lock/sleep/user-switch → zeroize in-memory DEK, drop decrypted state
+unlock:         master password → KEK → unwrap DEK → decrypt payload → VaultData
+item CRUD:      UI → command → VaultSession → vault-core (encrypt payload) → file
+backup:         VaultSession → backup::export (atomic, validated) → file
+restore:        file + password/RK → decrypt to NEW vault → verify → confirm → replace
+auto-lock:      idle timer → lock() → zeroize in-memory DEK, drop decrypted state
 ```
 
-## 5. Job / async model
+## 5. Async model
 
-Long operations (KDF benchmark, import of large exports, backup of a large vault,
-restore verification) run off the UI thread and report progress events, matching
-the job-state model proven in the reference project:
-`idle → queued → running → completed | failed | cancelled`. Cancellation is
-supported where practical; heavy work never blocks the React thread.
+The KDF is the only long operation (≈0.5–1 s). Frontend mutations call commands
+and refresh; the store exposes a `busy` flag so the UI can show a spinner.
+Backups and restores are single atomic file operations. There is no long-running
+job queue in Release 1.
 
 ## 6. Security-specific architecture rules
 
 1. **Crypto only in `vault-core`.** No `aes-gcm`/`argon2` usage in `src-tauri` or
    `src`.
-2. **No secrets in logs.** A logging policy scrubs secret fields; never log
-   passwords, keys, decrypted records, or plaintext import contents.
-3. **No secrets in shell arguments.** Never pass secrets via process args/env to
-   helper processes; pass via stdin or in-process only.
-4. **Zeroize** key material on lock/drop (`zeroize`/`secrecy`).
+2. **No secrets in logs.** Never log passwords, keys, decrypted records, or
+   plaintext import contents.
+3. **No secrets in shell arguments.** The recovery CLI reads credentials from
+   stdin only; secrets are never passed as process args.
+4. **Zeroize** key material on lock/drop (`zeroize`).
 5. **Fail closed.** Any authentication/format error refuses and surfaces a clear
    message; never fall back to plaintext.
-6. **Never overwrite.** Originals and prior vaults are preserved; outputs get safe
-   incremented names; restore swaps only after verification.
-7. **Input is untrusted.** Validate file types and paths, enforce resource limits,
-   guard against path traversal, never execute content from files.
-8. **No silent plaintext export.** Import/export flows warn and work with the
-   minimum data.
+6. **Never overwrite.** The prior vault is preserved; restore writes a new file
+   and only replaces after verification + explicit confirmation.
+7. **Input is untrusted.** Validate file types and paths; handle malformed files.
+8. **No silent plaintext export.** Import flows warn and work with the minimum
+   data.
 
 ## 7. Portability & DPAPI
 
@@ -132,7 +140,8 @@ supported where practical; heavy work never blocks the React thread.
 
 - Local gates: frontend `format:check`, `lint`, `typecheck`, Vitest, `vite build`;
   Rust `cargo fmt --check`, `clippy -D warnings`, `cargo test` across core crates.
-- The Tauri GUI crate is checked/built on the **Windows MSVC** CI runner (the
-  Linux box in this environment lacks the WebKitGTK deps and a GNU cross-build
-  produces a non-runnable exe — a lesson from the reference project).
+- The Tauri GUI crate is built on the **Windows MSVC** CI runner (the Linux box in
+  this environment lacks the WebKitGTK deps).
 - Release on version tag: Windows MSVC build → NSIS installer → uploaded artifact.
+  `v0.1.0` and `v0.1.1` were produced this way.
+- App icons: `npm run icon:build` (`scripts/make-icon.py` → `tauri icon`).

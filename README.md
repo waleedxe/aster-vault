@@ -6,10 +6,10 @@ Aster Vault is a calm, private, **local-first Windows password manager**. Your
 secrets stay on your device; your encrypted backups stay portable and
 recoverable. No account, no cloud, no hidden uploads.
 
-> **Status: early development.** The cryptographic core, encrypted store,
-> portable backups, recovery CLI, and the main app screens are built and tested.
-> The application is not yet packaged (requires the icon set) and has **not** had
-> an independent security review. See [Limitations](#limitations).
+> **Status: Release 1 complete, packaged.** Cryptographic core, encrypted store,
+> portable backups, recovery CLI, and all app screens are built and tested.
+> Windows installers are produced by CI (**v0.1.0**, **v0.1.1**). The project has
+> **not** had an independent security review. See [Limitations](#limitations).
 
 ## What it is (Release 1)
 
@@ -23,6 +23,8 @@ recoverable. No account, no cloud, no hidden uploads.
   plaintext workflow.
 - **Encrypted backup, restore, verification, and recovery drills.** Backups are
   portable and independent of the Windows profile.
+- **English + Arabic UI** with full RTL/LTR, and a calm, accessible design system
+  (light/dark, WCAG-AA verified contrast).
 
 ## Privacy
 
@@ -76,6 +78,7 @@ npm run lint           # eslint
 npm run typecheck      # tsc --noEmit
 npm run test           # vitest
 npm run build          # production frontend build
+npm run icon:build     # regenerate the app icon set from the brand mark
 
 cargo fmt --all -- --check
 cargo clippy -p vault-core -p vault-recovery-cli --all-targets -- -D warnings
@@ -83,18 +86,26 @@ cargo test -p vault-core -p vault-recovery-cli
 ```
 
 The Windows installer is produced by the release workflow (MSVC) — see
-`.github/workflows/`.
+`.github/workflows/`. A dev-only component gallery is reachable at `#gallery`.
 
 ## Repository layout
 
 ```text
-src/                     React frontend
-src-tauri/               thin Tauri 2 shell
-crates/vault-core/       crypto + container + storage (no GUI)
+src/                       React frontend (app, components/ui, features, stores, ...)
+src-tauri/                 thin Tauri 2 shell (commands only)
+crates/vault-core/         crypto + container + store + backup + session (no GUI)
 crates/vault-recovery-cli/ standalone recovery tool
-docs/specs/              threat model, vault format, architecture, plan
-docs/reference/          product brief + UI mockup
+assets/brand/              brand mark + icon source
+scripts/make-icon.py       builds the icon source from the mark
+docs/specs/                threat model, vault format, architecture, plan
+docs/reference/            product brief + UI mockup + brand source
+docs/PROJECT-AR.md         Arabic project guide
 ```
+
+## Releases
+
+Windows installers (NSIS) and portable builds are attached to the GitHub
+releases. The latest is **v0.1.1**.
 
 ## Limitations
 

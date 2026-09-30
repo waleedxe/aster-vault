@@ -229,3 +229,16 @@ failures → continue. Never accumulate broken phases.
   4. **Still open:** run the v0.1.1 installer on Windows to confirm the new icon
      and app launch; publish the draft releases; revoke the temporary token;
      independent security review.
+
+- **Session 10 — full docs sync:**
+  1. Updated `README` (status now "Release 1 complete, packaged"; design system;
+     releases; repo layout; `icon:build`).
+  2. Rewrote `docs/specs/03-architecture.md` to the implemented layout
+     (`components/ui`, `features/*`, `vault-core::session`, icon pipeline).
+  3. Marked phases 0–7 with evidence-based acceptance boxes in
+     `docs/specs/05-implementation-plan.md`; left the independent review and
+     clean-Windows validation explicitly open.
+  4. Updated `THIRD_PARTY_LICENSES.md` (added `uuid`, frontend packages, and the
+     stdlib-only icon tooling), `CONTRIBUTING.md` (design-system + icon rules),
+     and `docs/PROJECT-AR.md` (v0.1.1, design system, real logo, icon command).
+  5. `AGENTS.md` remains the chronological source of truth for sessions.

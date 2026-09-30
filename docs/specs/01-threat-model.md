@@ -85,9 +85,8 @@ marketing copy.
 1. The device's OS CSPRNG is sound.
 2. The user keeps the master password and recovery key secret and stores the
    recovery key separately from the vault.
-3. The reviewed crypto libraries (`argon2`, `aes-gcm`, `rand`, `zeroize`,
-   `secrecy`) are correct for the primitives they implement; no primitive is
-   hand-rolled.
+3. The reviewed crypto libraries (`argon2`, `aes-gcm`, `rand`, `zeroize`) are
+   correct for the primitives they implement; no primitive is hand-rolled.
 4. Backups are stored on media the user controls; remote storage receives
    encrypted bytes only.
 5. The user's Windows account and OS are not already compromised.

@@ -26,9 +26,23 @@ npm run lint
 npm run typecheck
 npm run test
 npm run build
+
+# Only when the brand mark changes:
+npm run icon:build
 ```
 
 Do not accumulate broken phases: get the gates green before moving on.
+
+## Design system & brand
+
+- UI primitives live in `src/components/ui`; tokens (palette, radii, type scale,
+  motion) live in `src/index.css`. Reuse them rather than ad-hoc styles.
+- A dev-only component gallery is reachable at `#gallery` — use it to check EN/AR
+  and light/dark.
+- The brand mark is `assets/brand/aster-mark.png`; `npm run icon:build`
+  regenerates the app icon set from it. Do not edit the generated icons by hand.
+- Keep the `muted` / `emerald-text` / `amber-text` text tokens for readable
+  contrast (they adapt per theme); use `amber` directly only for decorative fills.
 
 ## Commits
 
