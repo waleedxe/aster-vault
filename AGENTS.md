@@ -184,3 +184,16 @@ failures → continue. Never accumulate broken phases.
   5. New i18n keys (`home.*`) in EN + AR (parity preserved).
   6. Gates green. **Next:** workstream E (states/motion/a11y polish) and F
      (bring backup/import/settings/onboarding to the same bar).
+
+- **Session 6 — workstream F (remaining screens):**
+  1. Rebuilt the remaining screens on the primitives so nothing looks like a
+     scaffold: **Unlock**, **Onboarding**, **Backup center**, **Settings**,
+     **Import** now use Card/Button/Input/Select/Switch/Checkbox/Badge/toast and
+     the brand logo.
+  2. Backup center shows a health **Badge** and toast feedback; Settings uses a
+     **Switch** for reduced motion and badges for About; Import keeps the
+     plaintext warning in an amber card.
+  3. Gates green (lint/typecheck/build; 9 tests). Committed locally.
+  4. **Still open:** workstream E (empty/loading/error states, motion, WCAG-AA
+     contrast audit, keyboard map, RTL polish); push the local commits; integrate
+     the final logo; run the Windows build to validate launch.

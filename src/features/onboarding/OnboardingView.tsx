@@ -1,6 +1,14 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 
+import {
+  Button,
+  Card,
+  Checkbox,
+  Input,
+  Logo,
+  toast,
+} from "../../components/ui";
 import * as api from "../../lib/tauri";
 import {
   pickDirectory,
@@ -72,6 +80,7 @@ export function OnboardingView({
     setBusy(true);
     try {
       await api.exportBackup(backupDir);
+      toast(t("backup.verified"), "emerald");
       setStep(4);
     } catch (err) {
       setError(String(err));
@@ -82,169 +91,156 @@ export function OnboardingView({
 
   return (
     <div className="flex h-full items-center justify-center p-6">
-      <div className="w-full max-w-md rounded-vault border border-mist bg-white/60 p-8 shadow-sm dark:border-navy dark:bg-navy/40">
-        <div className="mb-4 flex items-center gap-2">
-          <span
-            aria-hidden="true"
-            className="inline-block h-8 w-8 rounded-[8px] bg-emerald"
-          />
-          <span className="text-lg font-semibold">{t("app.name")}</span>
+      <Card tone="raised" className="w-full max-w-md p-8">
+        <div className="mb-6 flex items-center gap-2">
+          <Logo size={32} withWordmark />
         </div>
 
         {step === 0 && (
           <div className="space-y-4">
-            <h1 className="text-2xl font-semibold">
+            <h1 className="text-welcome font-semibold">
               {t("onboarding.welcome")}
             </h1>
             <p className="text-sm text-muted">{t("onboarding.welcomeBody")}</p>
-            <p className="text-sm text-muted">{t("app.tagline")}</p>
-            <button
-              type="button"
-              onClick={() => setStep(1)}
-              className="min-h-11 w-full rounded-vault bg-emerald px-4 py-2 font-medium text-white"
-            >
+            <p className="text-sm text-emerald">{t("app.tagline")}</p>
+            <Button size="lg" className="w-full" onClick={() => setStep(1)}>
               {t("onboarding.next")}
-            </button>
+            </Button>
           </div>
         )}
 
         {step === 1 && (
           <div className="space-y-4">
-            <h1 className="text-xl font-semibold">
+            <h1 className="text-section font-semibold">
               {t("onboarding.chooseLocation")}
             </h1>
-            <div className="flex gap-2">
-              <input
+            <div className="flex items-end gap-2">
+              <Input
+                label={t("onboarding.location")}
                 value={path}
                 onChange={(event) => setPath(event.target.value)}
-                placeholder={t("onboarding.location")}
-                className="w-full rounded-vault border border-mist bg-transparent px-3 py-2 text-sm dark:border-navy"
               />
-              <button
-                type="button"
+              <Button
+                variant="secondary"
+                className="shrink-0"
                 onClick={() => void choosePath()}
-                className="shrink-0 rounded-vault border border-mist px-3 text-sm dark:border-navy"
               >
                 {t("onboarding.browse")}
-              </button>
+              </Button>
             </div>
 
-            <h2 className="pt-2 text-sm font-semibold">
+            <h2 className="pt-1 text-sm font-semibold">
               {t("onboarding.createMasterPassword")}
             </h2>
-            <input
+            <Input
+              label={t("lock.masterPassword")}
               type="password"
               value={password}
               onChange={(event) => setPassword(event.target.value)}
-              placeholder={t("lock.masterPassword")}
-              className="w-full rounded-vault border border-mist bg-transparent px-3 py-2 text-sm dark:border-navy"
+              hint={t("onboarding.passwordHint")}
             />
-            <input
+            <Input
+              label={t("lock.masterPassword")}
               type="password"
               value={confirm}
               onChange={(event) => setConfirm(event.target.value)}
-              placeholder={t("lock.masterPassword")}
-              className="w-full rounded-vault border border-mist bg-transparent px-3 py-2 text-sm dark:border-navy"
             />
-            <p className="text-xs text-muted">{t("onboarding.passwordHint")}</p>
             {error && <p className="text-sm text-amber">{error}</p>}
-            <button
-              type="button"
-              onClick={() => void createVault()}
+            <Button
+              size="lg"
+              className="w-full"
               disabled={busy}
-              className="min-h-11 w-full rounded-vault bg-emerald px-4 py-2 font-medium text-white disabled:opacity-50"
+              onClick={() => void createVault()}
             >
               {t("onboarding.create")}
-            </button>
+            </Button>
           </div>
         )}
 
         {step === 2 && (
           <div className="space-y-4">
-            <h1 className="text-xl font-semibold">
+            <h1 className="text-section font-semibold">
               {t("onboarding.generateRecoveryKey")}
             </h1>
             <p className="text-sm text-muted">
               {t("onboarding.recoveryIntro")}
             </p>
-            <code className="block break-all rounded-vault bg-mist/60 p-3 text-sm tnum dark:bg-midnight/60">
+            <code className="block break-all rounded-control bg-mist/60 p-3 text-sm tnum dark:bg-midnight/60">
               {recoveryKey}
             </code>
-            <label className="flex items-start gap-2 text-sm">
-              <input
-                type="checkbox"
-                checked={confirmedKey}
-                onChange={(event) => setConfirmedKey(event.target.checked)}
-              />
+            <Checkbox
+              checked={confirmedKey}
+              onChange={(event) => setConfirmedKey(event.target.checked)}
+            >
               {t("onboarding.recoveryConfirm")}
-            </label>
-            <button
-              type="button"
-              onClick={() => setStep(3)}
+            </Checkbox>
+            <Button
+              size="lg"
+              className="w-full"
               disabled={!confirmedKey}
-              className="min-h-11 w-full rounded-vault bg-emerald px-4 py-2 font-medium text-white disabled:opacity-50"
+              onClick={() => setStep(3)}
             >
               {t("onboarding.next")}
-            </button>
+            </Button>
           </div>
         )}
 
         {step === 3 && (
           <div className="space-y-4">
-            <h1 className="text-xl font-semibold">
+            <h1 className="text-section font-semibold">
               {t("onboarding.testFirstBackup")}
             </h1>
             <p className="text-sm text-muted">{t("onboarding.backupIntro")}</p>
-            <div className="flex gap-2">
-              <input
+            <div className="flex items-end gap-2">
+              <Input
+                label={t("backup.folder")}
                 value={backupDir}
                 onChange={(event) => setBackupDir(event.target.value)}
-                placeholder={t("backup.folder")}
-                className="w-full rounded-vault border border-mist bg-transparent px-3 py-2 text-sm dark:border-navy"
               />
-              <button
-                type="button"
+              <Button
+                variant="secondary"
+                className="shrink-0"
                 onClick={() => void chooseBackupDir()}
-                className="shrink-0 rounded-vault border border-mist px-3 text-sm dark:border-navy"
               >
                 {t("onboarding.browse")}
-              </button>
+              </Button>
             </div>
             {error && <p className="text-sm text-amber">{error}</p>}
             <div className="flex gap-2">
-              <button
-                type="button"
+              <Button
+                variant="secondary"
+                size="lg"
+                className="flex-1"
                 onClick={() => setStep(4)}
-                className="min-h-11 flex-1 rounded-vault border border-mist px-4 py-2 text-sm dark:border-navy"
               >
                 {t("onboarding.skip")}
-              </button>
-              <button
-                type="button"
-                onClick={() => void createBackup()}
+              </Button>
+              <Button
+                size="lg"
+                className="flex-1"
                 disabled={!backupDir || busy}
-                className="min-h-11 flex-1 rounded-vault bg-emerald px-4 py-2 font-medium text-white disabled:opacity-50"
+                onClick={() => void createBackup()}
               >
                 {t("onboarding.createBackup")}
-              </button>
+              </Button>
             </div>
           </div>
         )}
 
         {step === 4 && (
           <div className="space-y-4">
-            <h1 className="text-2xl font-semibold">{t("onboarding.done")}</h1>
+            <h1 className="text-title font-semibold">{t("onboarding.done")}</h1>
             <p className="text-sm text-muted">{t("lock.keepKeySeparate")}</p>
-            <button
-              type="button"
+            <Button
+              size="lg"
+              className="w-full"
               onClick={() => onComplete(path)}
-              className="min-h-11 w-full rounded-vault bg-emerald px-4 py-2 font-medium text-white"
             >
               {t("onboarding.finish")}
-            </button>
+            </Button>
           </div>
         )}
-      </div>
+      </Card>
     </div>
   );
 }

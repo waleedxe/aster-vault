@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 
+import { Button, Card, Select, toast } from "../../components/ui";
 import * as api from "../../lib/tauri";
 import type { ItemInput } from "../../lib/tauri";
 import { useVaultStore } from "../../stores/vaultStore";
@@ -13,47 +14,50 @@ export function ImportView() {
   const [source, setSource] = useState<"generic" | "proton">("generic");
   const [fileName, setFileName] = useState<string | null>(null);
   const [items, setItems] = useState<ItemInput[]>([]);
-  const [result, setResult] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
 
   const onFile = async (file: File) => {
     const text = await file.text();
     setFileName(file.name);
     setItems(rowsToItems(text));
-    setResult(null);
   };
 
   const doImport = async () => {
+    setBusy(true);
     let count = 0;
-    for (const item of items) {
-      await api.createItem(item);
-      count += 1;
+    try {
+      for (const item of items) {
+        await api.createItem(item);
+        count += 1;
+      }
+      toast(t("import.result", { count }), "emerald");
+      setItems([]);
+      await refresh();
+    } catch (err) {
+      toast(String(err), "amber");
+    } finally {
+      setBusy(false);
     }
-    setResult(t("import.result", { count }));
-    setItems([]);
-    await refresh();
   };
 
   return (
-    <div className="mx-auto max-w-3xl space-y-6 p-6">
-      <h1 className="text-2xl font-semibold">{t("import.title")}</h1>
-      <p className="rounded-vault border border-amber/60 bg-amber/10 p-3 text-sm text-amber">
-        {t("import.intro")}
-      </p>
+    <div className="mx-auto max-w-3xl space-y-4 p-6">
+      <h1 className="text-title font-semibold">{t("import.title")}</h1>
+      <Card className="border-amber/50 bg-amber/10 p-4">
+        <p className="text-sm text-amber">{t("import.intro")}</p>
+      </Card>
 
-      <section className="space-y-3 rounded-vault border border-mist p-4 dark:border-navy">
-        <label className="block text-sm">
-          {t("import.source")}
-          <select
-            value={source}
-            onChange={(event) =>
-              setSource(event.target.value as "generic" | "proton")
-            }
-            className="mt-1 w-full rounded-vault border border-mist bg-transparent px-3 py-2 dark:border-navy"
-          >
-            <option value="generic">{t("import.genericCsv")}</option>
-            <option value="proton">{t("import.protonPass")}</option>
-          </select>
-        </label>
+      <Card className="space-y-4 p-4">
+        <Select
+          label={t("import.source")}
+          value={source}
+          onChange={(event) =>
+            setSource(event.target.value as "generic" | "proton")
+          }
+        >
+          <option value="generic">{t("import.genericCsv")}</option>
+          <option value="proton">{t("import.protonPass")}</option>
+        </Select>
 
         <label className="block text-sm">
           {t("import.chooseFile")}
@@ -64,7 +68,7 @@ export function ImportView() {
               const file = event.target.files?.[0];
               if (file) void onFile(file);
             }}
-            className="mt-1 block w-full text-sm"
+            className="mt-1 block w-full text-sm text-muted file:me-3 file:rounded-control file:border file:border-mist file:bg-transparent file:px-3 file:py-1.5 file:text-sm dark:file:border-navy"
           />
         </label>
 
@@ -74,20 +78,13 @@ export function ImportView() {
           </p>
         )}
 
-        <button
-          type="button"
+        <Button
+          disabled={items.length === 0 || busy}
           onClick={() => void doImport()}
-          disabled={items.length === 0}
-          className="rounded-vault bg-emerald px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
         >
           {t("import.import")}
-        </button>
-        {result && (
-          <p role="status" className="text-sm text-emerald">
-            {result}
-          </p>
-        )}
-      </section>
+        </Button>
+      </Card>
     </div>
   );
 }
