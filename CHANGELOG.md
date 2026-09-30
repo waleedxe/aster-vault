@@ -4,7 +4,22 @@ All notable changes to Aster Vault are documented here. This project follows
 [Keep a Changelog](https://keepachangelog.com/) and intends to use
 [Semantic Versioning](https://semver.org/).
 
-## [Unreleased]
+## [0.1.1]
+
+### Added
+- Final brand mark integrated (transparent PNG); app icon set regenerated and
+  the mark now appears in-app (sidebar, unlock, onboarding).
+- Full design system: tokens (with WCAG-AA verified mode-aware text colours),
+  component library, and a dev-only component gallery.
+- Rebuilt shell, vault list/grid, and item detail to match the approved mockup:
+  greeting header, global search with Ctrl+K, sort + grid/list, monogram avatars,
+  per-field cards with reveal/copy/open, and a backup-status card.
+- Empty/loading/error states; toast notifications; accessible contrast.
+
+### Changed
+- Version bumped to 0.1.1 for the next Windows build.
+
+## [0.1.0]
 
 ### Added
 - Phase 0 specification set: threat model and explicit limits, portable vault and
