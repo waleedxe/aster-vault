@@ -208,3 +208,14 @@ failures → continue. Never accumulate broken phases.
      the shell surfaces backend errors in a dismissible banner.
   3. **RTL:** corrected the `Switch` thumb direction using the `rtl:` variant.
   4. Gates green. Pushed to GitHub.
+
+- **Session 8 — real brand logo integrated:**
+  1. User supplied the final mark as a transparent RGBA PNG → saved to
+     `assets/brand/aster-mark.png` (colours: emerald `#08756D`, mint `#B2F5DD`).
+  2. `scripts/make-icon.py` (pure stdlib) composites the mark onto the dark tile
+     → `assets/icon-source.png` → `npm run icon:build` regenerates the full icon
+     set (.ico/.icns/all sizes). Removed the placeholder SVG pipeline + resvg.
+  3. `<Logo/>` now renders the real mark (Vite asset import), used in the sidebar,
+     unlock and onboarding screens.
+  4. Gates green. **Still open:** Windows run validation; independent security
+     review; optional motion/keyboard polish.

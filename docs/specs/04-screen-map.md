@@ -119,6 +119,11 @@ around protected negative space. Must work at 16 px and in one colour. Avoid loc
 shield, fingerprint, cloud clichés. Do not imitate Proton's colours, logo, or
 layout.
 
+> **Final artwork:** `assets/brand/aster-mark.png` (transparent RGBA, four curved
+> petals — three emerald, one mint — in a pinwheel around a central star). The app
+> icon is composited onto the dark tile by `scripts/make-icon.py`; run
+> `npm run icon:build` to regenerate the full icon set.
+
 **Microcopy** — "Your vault is locked." / "Backed up 2 hours ago." / "Test your
 backup" / "Restore on this device" / "Keep your recovery key somewhere separate." /
 "This file could not be verified."
