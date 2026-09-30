@@ -219,3 +219,13 @@ failures → continue. Never accumulate broken phases.
      unlock and onboarding screens.
   4. Gates green. **Still open:** Windows run validation; independent security
      review; optional motion/keyboard polish.
+
+- **Session 9 — v0.1.1 released:**
+  1. Bumped version to 0.1.1 (package.json, tauri.conf.json, Cargo workspace).
+  2. Tagged **`v0.1.1`**; the Windows (MSVC) release workflow passed and produced
+     `Aster.Vault_0.1.1_x64-setup.exe` + `aster-vault.exe` (now carrying the real
+     brand icon).
+  3. Downloaded both to `C:\Users\walee\Desktop\aster-vault-release\`.
+  4. **Still open:** run the v0.1.1 installer on Windows to confirm the new icon
+     and app launch; publish the draft releases; revoke the temporary token;
+     independent security review.
