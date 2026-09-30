@@ -73,7 +73,9 @@ export function Menu({ label, trigger, items, align = "end" }: MenuProps) {
                 }}
                 className={cx(
                   "flex w-full items-center gap-2 px-3 py-2 text-start text-sm hover:bg-mist/60 dark:hover:bg-navy-deep/70",
-                  item.danger ? "text-amber" : "text-ink dark:text-porcelain",
+                  item.danger
+                    ? "text-amber-text"
+                    : "text-ink dark:text-porcelain",
                 )}
               >
                 {item.icon}

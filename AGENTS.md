@@ -197,3 +197,14 @@ failures → continue. Never accumulate broken phases.
   4. **Still open:** workstream E (empty/loading/error states, motion, WCAG-AA
      contrast audit, keyboard map, RTL polish); push the local commits; integrate
      the final logo; run the Windows build to validate launch.
+
+- **Session 7 — workstream E (states, a11y, contrast):**
+  1. **Contrast audit** of the token pairs; failures fixed with mode-aware text
+     tokens (`muted`, `emerald-text`, `amber-text`) and a slightly darker primary
+     button. All audited pairs now pass WCAG AA (table in
+     `docs/specs/04-screen-map.md` §3a).
+  2. **State components:** `EmptyState` and `ErrorBanner` added; the vault list
+     shows a spinner while loading and a calm empty state with a create action;
+     the shell surfaces backend errors in a dismissible banner.
+  3. **RTL:** corrected the `Switch` thumb direction using the `rtl:` variant.
+  4. Gates green. Pushed to GitHub.

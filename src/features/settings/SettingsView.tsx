@@ -135,7 +135,7 @@ export function SettingsView() {
             {t("settings.formatVersion")}: {info?.format_version ?? "…"}
           </Badge>
         </div>
-        <p className="text-sm text-amber">{t("settings.limitations")}</p>
+        <p className="text-sm text-amber-text">{t("settings.limitations")}</p>
       </Card>
     </div>
   );

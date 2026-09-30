@@ -6,9 +6,9 @@ type Tone = "neutral" | "emerald" | "amber" | "mint";
 
 const TONE: Record<Tone, string> = {
   neutral: "bg-mist/70 text-muted dark:bg-navy/50",
-  emerald: "bg-emerald/12 text-emerald",
-  amber: "bg-amber/15 text-amber",
-  mint: "bg-mint text-emerald-strong",
+  emerald: "bg-emerald/12 text-emerald-text",
+  amber: "bg-amber/15 text-amber-text",
+  mint: "bg-mint text-emerald-text",
 };
 
 /** Small status pill. */

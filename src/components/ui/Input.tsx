@@ -37,7 +37,7 @@ export function Input({
         {...rest}
       />
       {error ? (
-        <p className="mt-1 text-2xs text-amber">{error}</p>
+        <p className="mt-1 text-2xs text-amber-text">{error}</p>
       ) : hint ? (
         <p className="mt-1 text-2xs text-muted">{hint}</p>
       ) : null}

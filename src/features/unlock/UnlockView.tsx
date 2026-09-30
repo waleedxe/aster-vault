@@ -92,7 +92,7 @@ export function UnlockView({ onUnlocked }: { onUnlocked: () => void }) {
             autoComplete="off"
             onChange={(event) => setCredential(event.target.value)}
           />
-          {error && <p className="text-sm text-amber">{error}</p>}
+          {error && <p className="text-sm text-amber-text">{error}</p>}
 
           <Checkbox
             checked={revealed}

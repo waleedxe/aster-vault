@@ -22,10 +22,12 @@ import {
   Card,
   Checkbox,
   Dialog,
+  EmptyState,
   IconButton,
   Input,
   Menu,
   Select,
+  Spinner,
   Textarea,
   toast,
 } from "../../components/ui";
@@ -86,6 +88,7 @@ export function VaultView() {
   const selectedId = useVaultStore((state) => state.selectedId);
   const select = useVaultStore((state) => state.select);
   const refresh = useVaultStore((state) => state.refresh);
+  const busy = useVaultStore((state) => state.busy);
 
   const [editing, setEditing] = useState<ItemDto | "new" | null>(null);
   const [reusedCount, setReusedCount] = useState(0);
@@ -205,8 +208,26 @@ export function VaultView() {
         </div>
 
         <div className="min-h-0 flex-1 overflow-auto">
-          {sorted.length === 0 ? (
-            <p className="p-6 text-sm text-muted">{t("vault.empty")}</p>
+          {busy && sorted.length === 0 ? (
+            <div className="flex justify-center p-10 text-muted">
+              <Spinner size={24} />
+            </div>
+          ) : sorted.length === 0 ? (
+            <div className="p-4">
+              <EmptyState
+                title={t("vault.empty")}
+                description={t("home.subtitle")}
+                action={
+                  <Button
+                    size="sm"
+                    icon={<Plus className="h-4 w-4" />}
+                    onClick={() => setEditing("new")}
+                  >
+                    {t("actions.new")}
+                  </Button>
+                }
+              />
+            </div>
           ) : layout === "list" ? (
             <ul>
               {sorted.map((item) => (
@@ -257,7 +278,7 @@ export function VaultView() {
             onChanged={() => void refresh()}
           />
         ) : (
-          <p className="text-sm text-muted">{t("vault.selectItem")}</p>
+          <EmptyState title={t("vault.selectItem")} />
         )}
       </section>
 
@@ -475,11 +496,11 @@ function ItemDetail({
         tone="raised"
         className="flex items-center gap-3 border-emerald/40 p-4"
       >
-        <span className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-emerald/12 text-emerald">
+        <span className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-emerald/12 text-emerald-text">
           <ExternalLink className="h-5 w-5" aria-hidden="true" />
         </span>
         <div className="flex-1">
-          <p className="text-sm font-medium text-emerald">
+          <p className="text-sm font-medium text-emerald-text">
             {backup.has ? t("home.backupVerified") : t("home.noBackup")}
           </p>
           <p className="text-xs text-muted">
@@ -620,7 +641,7 @@ function ItemEditor({
           {t("actions.favorite")}
         </Checkbox>
 
-        {error && <p className="text-sm text-amber">{error}</p>}
+        {error && <p className="text-sm text-amber-text">{error}</p>}
       </div>
     </Dialog>
   );

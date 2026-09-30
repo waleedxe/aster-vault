@@ -4,6 +4,8 @@ export { Button } from "./Button";
 export { Card } from "./Card";
 export { Checkbox } from "./Checkbox";
 export { Dialog } from "./Dialog";
+export { EmptyState } from "./EmptyState";
+export { ErrorBanner } from "./ErrorBanner";
 export { IconButton } from "./IconButton";
 export { Input } from "./Input";
 export { Logo } from "./Logo";

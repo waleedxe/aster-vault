@@ -44,7 +44,7 @@ export function ImportView() {
     <div className="mx-auto max-w-3xl space-y-4 p-6">
       <h1 className="text-title font-semibold">{t("import.title")}</h1>
       <Card className="border-amber/50 bg-amber/10 p-4">
-        <p className="text-sm text-amber">{t("import.intro")}</p>
+        <p className="text-sm text-amber-text">{t("import.intro")}</p>
       </Card>
 
       <Card className="space-y-4 p-4">

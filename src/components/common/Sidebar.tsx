@@ -72,7 +72,7 @@ export function Sidebar({ onLock }: { onLock: () => void }) {
           className={
             "flex w-full items-center gap-3 rounded-control px-3 py-2 text-start text-sm transition-colors duration-[var(--duration-fast)] " +
             (active
-              ? "bg-mint text-emerald-strong dark:bg-navy-deep dark:text-porcelain"
+              ? "bg-mint text-emerald-text dark:bg-navy-deep dark:text-porcelain"
               : "text-muted hover:bg-mist/60 hover:text-ink dark:hover:bg-navy/40 dark:hover:text-porcelain")
           }
         >
@@ -105,7 +105,7 @@ export function Sidebar({ onLock }: { onLock: () => void }) {
           className={
             "flex w-full items-center gap-3 rounded-control px-3 py-2 text-start text-sm transition-colors duration-[var(--duration-fast)] " +
             (view === "settings"
-              ? "bg-mint text-emerald-strong dark:bg-navy-deep dark:text-porcelain"
+              ? "bg-mint text-emerald-text dark:bg-navy-deep dark:text-porcelain"
               : "text-muted hover:bg-mist/60 hover:text-ink dark:hover:bg-navy/40 dark:hover:text-porcelain")
           }
         >

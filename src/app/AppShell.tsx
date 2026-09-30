@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { ChevronDown, Download, Moon, Search, Sun, Wand2 } from "lucide-react";
 
-import { IconButton, Menu } from "../components/ui";
+import { ErrorBanner, IconButton, Menu } from "../components/ui";
 import { GeneratorPanel } from "../features/generator/GeneratorPanel";
 import { BackupView } from "../features/backup/BackupView";
 import { ImportView } from "../features/import/ImportView";
@@ -31,6 +31,8 @@ export function AppShell({ onLock }: { onLock: () => void }) {
   const setQuery = useVaultStore((state) => state.setQuery);
   const refresh = useVaultStore((state) => state.refresh);
   const lock = useVaultStore((state) => state.lock);
+  const error = useVaultStore((state) => state.error);
+  const setError = useVaultStore((state) => state.setError);
   const autoLockMinutes = useSettingsStore((state) => state.autoLockMinutes);
   const themeMode = useThemeStore((state) => state.mode);
   const toggleTheme = useThemeStore((state) => state.toggle);
@@ -145,6 +147,11 @@ export function AppShell({ onLock }: { onLock: () => void }) {
         </header>
 
         <section className="flex min-h-0 flex-1 flex-col">
+          {error && (
+            <div className="px-6 pt-4">
+              <ErrorBanner message={error} onDismiss={() => setError(null)} />
+            </div>
+          )}
           {showImport ? (
             <div className="flex-1 overflow-auto">
               <ImportView />

@@ -21,11 +21,16 @@
   --color-mist: #e8eee9;
   --color-emerald: #2e866f;
   --color-emerald-strong: #27745f;
+  --color-emerald-deep: #1f6b57;
   --color-mint: #cfeadc;
   --color-amber: #d9a957;
   --color-ink: #172231;
-  --color-muted: #657383;
   --color-danger: #c0563f;
+
+  /* Mode-aware text colours (WCAG AA verified; see docs/specs/04-screen-map.md) */
+  --color-muted: var(--fg-muted);
+  --color-emerald-text: var(--fg-emerald);
+  --color-amber-text: var(--fg-amber);
 
   /* Shape */
   --radius-control: 10px;
@@ -57,10 +62,18 @@
 :root {
   color-scheme: light;
   font-family: var(--font-sans);
+  /* Light-theme accessible text colours */
+  --fg-muted: #55616e;
+  --fg-emerald: #1f6b57;
+  --fg-amber: #8a651f;
 }
 
 :root.dark {
   color-scheme: dark;
+  /* Dark-theme accessible text colours */
+  --fg-muted: #a6b2be;
+  --fg-emerald: #63bd9f;
+  --fg-amber: #e0b566;
 }
 
 html,

@@ -102,7 +102,7 @@ export function OnboardingView({
               {t("onboarding.welcome")}
             </h1>
             <p className="text-sm text-muted">{t("onboarding.welcomeBody")}</p>
-            <p className="text-sm text-emerald">{t("app.tagline")}</p>
+            <p className="text-sm text-emerald-text">{t("app.tagline")}</p>
             <Button size="lg" className="w-full" onClick={() => setStep(1)}>
               {t("onboarding.next")}
             </Button>
@@ -145,7 +145,7 @@ export function OnboardingView({
               value={confirm}
               onChange={(event) => setConfirm(event.target.value)}
             />
-            {error && <p className="text-sm text-amber">{error}</p>}
+            {error && <p className="text-sm text-amber-text">{error}</p>}
             <Button
               size="lg"
               className="w-full"
@@ -205,7 +205,7 @@ export function OnboardingView({
                 {t("onboarding.browse")}
               </Button>
             </div>
-            {error && <p className="text-sm text-amber">{error}</p>}
+            {error && <p className="text-sm text-amber-text">{error}</p>}
             <div className="flex gap-2">
               <Button
                 variant="secondary"

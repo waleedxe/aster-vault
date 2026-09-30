@@ -29,7 +29,7 @@ export function Tabs({ items, value, onChange, className }: TabsProps) {
             className={cx(
               "rounded-control px-3 py-1.5 text-sm transition-colors duration-[var(--duration-fast)]",
               active
-                ? "bg-mint text-emerald-strong dark:bg-navy dark:text-porcelain"
+                ? "bg-mint text-emerald-text dark:bg-navy dark:text-porcelain"
                 : "text-muted hover:text-ink dark:hover:text-porcelain",
             )}
           >

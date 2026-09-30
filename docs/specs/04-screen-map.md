@@ -123,6 +123,28 @@ layout.
 backup" / "Restore on this device" / "Keep your recovery key somewhere separate." /
 "This file could not be verified."
 
+## 3a. Contrast (WCAG AA verified)
+
+Audited ratios (normal text needs ≥ 4.5:1). Mode-aware text tokens were added so
+the same class works in both themes: `muted`, `emerald-text`, `amber-text`.
+
+| Pair | Ratio | Result |
+|------|-------|--------|
+| Ink on Porcelain | 15.0 | AA |
+| Muted (light) on Porcelain | 5.9 | AA |
+| Emerald-text (light) on Porcelain | 6.0 | AA |
+| Emerald-text (light) on Mint | 5.0 | AA |
+| Amber-text (light) on Porcelain | 5.0 | AA |
+| White on Emerald-strong (primary button) | 5.6 | AA |
+| Porcelain on Midnight | 16.7 | AA |
+| Porcelain on Navy | 13.6 | AA |
+| Muted (dark) on Navy | 6.7 | AA |
+| Emerald-text (dark) on Navy | 6.4 | AA |
+| Amber-text (dark) on Midnight | 7.6 | AA |
+
+The gold star uses `amber` directly (decorative, non-text) and is never the only
+signal for a state.
+
 ## 4. Accessibility requirements
 
 - Full keyboard navigation; logical focus order; visible Emerald focus rings.
