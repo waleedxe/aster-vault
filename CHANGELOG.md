@@ -4,6 +4,33 @@ All notable changes to Aster Vault are documented here. This project follows
 [Keep a Changelog](https://keepachangelog.com/) and intends to use
 [Semantic Versioning](https://semver.org/).
 
+## [0.1.2] - 2026-10-23
+
+### Security
+- Clamp KDF parameters (Argon2id memory/time/parallelism) so a crafted vault file
+  can no longer cause an unlock-time denial of service.
+- Zeroize the decrypted vault graph (titles, fields, notes, TOTP seeds, history)
+  when the session locks or the process exits.
+- The recovery CLI reads the master password without echoing it.
+- Restoring a backup refuses to overwrite the currently-open vault and refuses a
+  directory destination.
+
+### Fixed
+- **Data loss:** the vault is now written to disk after every change, so entries
+  are no longer lost when the session auto-locks or the app closes.
+- Backup "verify" now authenticates the payload and reports the item count
+  instead of only checking the file structure.
+- Recovery-key restore now works from the app.
+
+### Added
+- Known-answer tests for Argon2id (RFC 9106) and AES-256-GCM (NIST CAVP).
+- CI dependency audit (`cargo audit`) and Dependabot.
+- A visible "beta - not independently audited" notice in the app and README.
+
+### Changed
+- Documentation corrected to match the implementation (nonce scheme, AAD
+  contents, KDF defaults, auto-lock triggers).
+
 ## [0.1.1]
 
 ### Added

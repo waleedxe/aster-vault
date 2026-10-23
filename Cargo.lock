@@ -96,7 +96,7 @@ dependencies = [
 
 [[package]]
 name = "aster-vault"
-version = "0.1.1"
+version = "0.1.2"
 dependencies = [
  "serde",
  "serde_json",
@@ -4300,7 +4300,7 @@ dependencies = [
 
 [[package]]
 name = "vault-core"
-version = "0.1.1"
+version = "0.1.2"
 dependencies = [
  "aes-gcm",
  "argon2",
@@ -4315,7 +4315,7 @@ dependencies = [
 
 [[package]]
 name = "vault-recovery-cli"
-version = "0.1.1"
+version = "0.1.2"
 dependencies = [
  "vault-core",
  "zeroize",
