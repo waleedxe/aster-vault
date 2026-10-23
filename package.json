@@ -4,6 +4,10 @@
   "version": "0.1.1",
   "type": "module",
   "description": "Aster Vault — a calm, private, offline Windows password manager",
+  "license": "MIT",
+  "engines": {
+    "node": ">=22.12"
+  },
   "scripts": {
     "dev": "vite",
     "build": "tsc --noEmit && vite build",

@@ -29,6 +29,8 @@
   "bundle": {
     "active": true,
     "targets": ["nsis"],
+    "publisher": "Waleed",
+    "copyright": "Copyright (c) 2026 Waleed",
     "category": "Utility",
     "shortDescription": "Private, offline password manager",
     "longDescription": "Aster Vault keeps your secrets on your device with portable, recoverable encrypted backups. No account, no cloud.",

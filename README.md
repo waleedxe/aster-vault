@@ -18,6 +18,20 @@ recoverable. No account, no cloud, no hidden uploads.
 > Windows installers are produced by CI (**v0.1.0**, **v0.1.1**). The project has
 > **not** had an independent security review. See [Limitations](#limitations).
 
+## Download
+
+Grab the latest build from the [**Releases** page](../../releases/latest):
+
+- **`Aster Vault_<version>_x64-setup.exe`** — the Windows (NSIS) installer.
+- **`aster-vault-recovery.exe`** — the standalone recovery CLI. It restores and
+  verifies encrypted backups from the command line, without the desktop UI, so a
+  broken or missing app can never strand your backups. Keep a copy somewhere safe
+  alongside your backup files.
+
+> **Builds are unsigned.** They have no code-signing certificate, so Windows
+> SmartScreen will show a warning the first time you run them. Choose **More
+> info → Run anyway** to continue.
+
 ## What it is (Release 1)
 
 - Offline vault: folders/collections; logins, secure notes, payment cards,
