@@ -14,7 +14,8 @@ certification, an audit, or immunity to compromise.
 - **Release 1 (build now):** offline local vault — folders/collections; logins,
   notes, cards, identities, TOTP; search + favorites; password/passphrase
   generator; local strength + reuse warnings; copy with clipboard-clear timer;
-  auto-lock (inactivity / screen lock / sleep / user switch); masked fields;
+  auto-lock on inactivity (in-app timer only — no OS screen-lock/sleep/user-switch
+  hook yet); masked fields;
   Proton Pass + CSV import (explicit plaintext workflow); encrypted backup,
   restore, verification, recovery drills. No account, no cloud.
 - **Release 2 (planned only, `docs/specs/06-browser-extension-r2.md`):** Chrome/
@@ -27,8 +28,9 @@ certification, an audit, or immunity to compromise.
 ## 3. Non-negotiable security rules
 1. Random 256-bit DEK from OS CSPRNG; AES-256-GCM; unique nonces; authenticated
    metadata (AAD). Never invent a cipher or reuse a nonce.
-2. Argon2id KEK from the master password with a unique salt; benchmark + store
-   parameters; allow future upgrades; wrap the DEK.
+2. Argon2id KEK from the master password with a unique salt; use the recommended
+   parameters and store them with the vault; allow future upgrades; wrap the DEK.
+   (Not benchmarked at setup — the default is a fixed 64 MiB / t=3 / p=1.)
 3. Independent recovery-key wrapping path. Never store master/recovery key in the
    vault, logs, analytics, or backups.
 4. **Encrypt metadata too** — names, URLs, usernames, tags, notes.
@@ -242,3 +244,19 @@ failures → continue. Never accumulate broken phases.
      stdlib-only icon tooling), `CONTRIBUTING.md` (design-system + icon rules),
      and `docs/PROJECT-AR.md` (v0.1.1, design system, real logo, icon command).
   5. `AGENTS.md` remains the chronological source of truth for sessions.
+
+- **Session 11 — safety net + doc honesty (2026-10-23):**
+  1. **Crypto KATs:** added exact-answer tests to `tests/crypto.rs` — the
+     Argon2id RFC 9106 §5.3 vector (via the primitive; `argon2` added as a
+     dev-dependency) and the reference-implementation KAT through
+     `kdf::derive_key`, plus a NIST CAVP AES-256-GCM vector through
+     `aead::seal`. These fail if a crate version or parameter changes.
+  2. **Supply chain:** added `.github/dependabot.yml` (cargo + npm +
+     github-actions) and a `cargo audit` job (`rustsec/audit-check`) to CI.
+  3. **Docs reconciled to the code** (`02-vault-format`, `01-threat-model`,
+     `04-screen-map`, `README`, `AGENTS`): auto-lock is inactivity-only;
+     payload nonces are random-per-save (no counter); AAD is
+     `{format_version, created_at}` (+ a payload domain prefix) with no
+     record-index digest; KDF params are a fixed recommended default (not
+     benchmarked); unlock is not rate-limited. Added a **beta — not
+     independently audited** banner to `README` and a dismissible in-app notice.

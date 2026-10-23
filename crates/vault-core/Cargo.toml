@@ -16,3 +16,9 @@ rand = { workspace = true }
 argon2 = { workspace = true }
 aes-gcm = { workspace = true }
 uuid = { workspace = true }
+
+[dev-dependencies]
+# Used only by the known-answer tests, which exercise the Argon2id primitive
+# directly with the RFC 9106 secret/associated-data parameters that the public
+# `kdf::derive_key` wrapper does not expose.
+argon2 = { workspace = true }

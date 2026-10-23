@@ -3,6 +3,10 @@
     "name": "Aster Vault",
     "tagline": "Private by design. Ready to recover."
   },
+  "beta": {
+    "notice": "Beta: not independently audited. Use for testing, not your most critical secrets.",
+    "dismiss": "Dismiss"
+  },
   "nav": {
     "allItems": "All Items",
     "favorites": "Favorites",

@@ -2,6 +2,13 @@
 
 **Private by design. Ready to recover.**
 
+> ⚠️ **Beta — not independently audited.** Aster Vault is an early, pre-1.0
+> release. It has **not** had an independent security review, so it is **not yet
+> recommended for your most important secrets** — use it for testing and for
+> credentials you can afford to lose. Read the
+> [threat model](docs/specs/01-threat-model.md) to see what it does and does not
+> protect against.
+
 Aster Vault is a calm, private, **local-first Windows password manager**. Your
 secrets stay on your device; your encrypted backups stay portable and
 recoverable. No account, no cloud, no hidden uploads.
@@ -18,7 +25,8 @@ recoverable. No account, no cloud, no hidden uploads.
 - Search and favorites; password and passphrase generator.
 - Local strength and reuse warnings (computed on your device).
 - Copy with a clipboard-clearing timer; masked fields.
-- Auto-lock on inactivity, screen lock, sleep, and user switch.
+- Auto-lock after inactivity (an in-app timer; OS screen-lock / sleep /
+  user-switch triggers are not implemented yet).
 - Import from Proton Pass export and generic CSV through an explicit, local-only
   plaintext workflow.
 - **Encrypted backup, restore, verification, and recovery drills.** Backups are

@@ -140,6 +140,8 @@ job queue in Release 1.
 
 - Local gates: frontend `format:check`, `lint`, `typecheck`, Vitest, `vite build`;
   Rust `cargo fmt --check`, `clippy -D warnings`, `cargo test` across core crates.
+- CI also runs a **dependency audit** (`cargo audit` via `rustsec/audit-check`),
+  and `.github/dependabot.yml` keeps cargo, npm and GitHub Actions current.
 - The Tauri GUI crate is built on the **Windows MSVC** CI runner (the Linux box in
   this environment lacks the WebKitGTK deps).
 - Release on version tag: Windows MSVC build → NSIS installer → uploaded artifact.

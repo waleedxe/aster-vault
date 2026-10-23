@@ -3,6 +3,12 @@
 Status: Phase 0 specification. Derived from the product brief and the UI mockup
 (`docs/reference/aster-vault-mockup.png`).
 
+> **As implemented (2026-10-23).** The screens exist as described, with three
+> deltas from this design: auto-lock is an **in-app inactivity timer only** (no
+> OS screen-lock / sleep / user-switch hook); failed-unlock messages are generic
+> but **not rate-limited**; and KDF parameters are a fixed recommended default,
+> **not upgraded on unlock**. See §2.2 and §2.10 below.
+
 ## 1. Navigation model
 
 Left sidebar (RTL-aware, mirrored in Arabic):
@@ -35,7 +41,8 @@ Detail panel: reveal, copy, edit, history, TOTP code, strength/reuse warnings.
 ### 2.2 Unlock
 - Master-password field (masked), reveal toggle.
 - "Use recovery key" path.
-- Failed attempts: generic, rate-limited messaging; no information leak.
+- Failed attempts: a single generic message; no information leak. **As
+  implemented**, attempts are **not** rate-limited or throttled.
 - Shows last backup age and backup-health hint.
 
 ### 2.3 Vault list
@@ -76,8 +83,10 @@ Detail panel: reveal, copy, edit, history, TOTP code, strength/reuse warnings.
   fail safely with a clear message.
 
 ### 2.10 Settings
-- Security: auto-lock timeout, lock on screen lock/sleep/user switch, clipboard
-  clear timeout, KDF upgrade on unlock.
+- Security: auto-lock timeout (in-app inactivity), clipboard clear timeout.
+  **As implemented**, there is **no** lock on OS screen lock / sleep / user
+  switch, and **no** KDF upgrade on unlock (parameters are a fixed recommended
+  default stored in the header).
 - Appearance: light/dark, reduced motion, high contrast.
 - Language: English / Arabic.
 - About: version, format version, licenses, privacy, limitations.

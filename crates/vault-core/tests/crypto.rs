@@ -5,6 +5,7 @@
 
 use vault_core::container::header::{ContainerKind, VaultHeader, FORMAT_VERSION};
 use vault_core::crypto::aead;
+use vault_core::crypto::kdf;
 use vault_core::crypto::keys::{RecoveryKey, VaultKey};
 use vault_core::{
     change_master_password, create, unlock_with_password, unlock_with_recovery_key, KdfParams,
@@ -280,4 +281,103 @@ fn debug_output_redacts_key_material() {
     let rendered = format!("{key:?}");
     assert!(rendered.contains("redacted"));
     assert!(!rendered.contains(&format!("{:02x}", key.as_array()[0])));
+}
+
+// ---------------------------------------------------------------------------
+// Known-answer (KAT) vectors
+//
+// These assert exact expected bytes rather than round-trips, so a change to a
+// crate version, an algorithm choice, or a parameter fails the build instead of
+// passing a test that only checks itself.
+// ---------------------------------------------------------------------------
+
+/// Decode a hex string. Only used to spell the KAT vectors legibly.
+fn hex(text: &str) -> Vec<u8> {
+    text.as_bytes()
+        .chunks_exact(2)
+        .map(|pair| {
+            let digits = std::str::from_utf8(pair).expect("ascii hex");
+            u8::from_str_radix(digits, 16).expect("valid hex")
+        })
+        .collect()
+}
+
+#[test]
+fn argon2id_matches_rfc9106_test_vector() {
+    // RFC 9106 §5.3 (Argon2id) known-answer vector, as shipped in the `argon2`
+    // crate's own tests: `argon2-0.5.3/tests/kat.rs`, test `argon2id_v0x13`
+    // (the same vector appears in draft-irtf-cfrg-argon2-12 §5).
+    //
+    // Parameters: m = 32 KiB, t = 3, p = 4, 32-byte tag; password = 0x01 * 32,
+    // salt = 0x02 * 16, secret = 0x03 * 8, associated data = 0x04 * 12.
+    //
+    // The app's `kdf::derive_key` wrapper derives without a secret or associated
+    // data, so the primitive is exercised directly here with the same `argon2`
+    // crate the app depends on.
+    use argon2::{Algorithm, Argon2, AssociatedData, ParamsBuilder, Version};
+
+    let params = ParamsBuilder::new()
+        .m_cost(32)
+        .t_cost(3)
+        .p_cost(4)
+        .data(AssociatedData::new(&[0x04; 12]).unwrap())
+        .build()
+        .unwrap();
+    let context =
+        Argon2::new_with_secret(&[0x03; 8], Algorithm::Argon2id, Version::V0x13, params).unwrap();
+
+    let mut tag = [0u8; 32];
+    context
+        .hash_password_into(&[0x01; 32], &[0x02; 16], &mut tag)
+        .unwrap();
+
+    assert_eq!(
+        tag.to_vec(),
+        hex("0d640df58d78766c08c037a34a8b53c9d01ef0452d75b65eb52520e96b01e659")
+    );
+}
+
+#[test]
+fn argon2id_kdf_wrapper_matches_reference_vector() {
+    // Argon2 reference-implementation KAT (phc-winner-argon2 `src/test.c`), as
+    // shipped in `argon2-0.5.3/tests/kat.rs`, test
+    // `reference_argon2id_v0x13_2_16_1`: m = 65536 KiB, t = 2, p = 1, 32-byte
+    // tag, password "password", salt "somesalt". No secret/associated data, so
+    // it runs through the app's own `kdf::derive_key` wrapper.
+    let derived = kdf::derive_key(
+        b"password",
+        b"somesalt",
+        KdfParams {
+            m_cost: 65536,
+            t_cost: 2,
+            p_cost: 1,
+        },
+    )
+    .unwrap();
+
+    assert_eq!(
+        derived.as_slice(),
+        hex("09316115d5cf24ed5a15a31a3ba326e5cf32edc24702987c02b6566f61913cf7").as_slice()
+    );
+}
+
+#[test]
+fn aes256gcm_matches_nist_cavs_vector() {
+    // NIST CAVP AES-256-GCM known-answer vector from `gcmEncryptExtIV256.rsp`,
+    // as shipped in `aes-gcm-0.10.3/tests/aes256gcm.rs`: key, nonce, plaintext
+    // and AAD map to the exact ciphertext and tag below.
+    let key = hex("92e11dcdaa866f5ce790fd24501f92509aacf4cb8b1339d50c9c1240935dd08b");
+    let nonce = hex("ac93a1a6145299bde902f21a");
+    let plaintext = hex("2d71bcfa914e4ac045b2aa60955fad24");
+    let aad = hex("1e0889016f67601c8ebea4943bc23ad6");
+
+    let sealed = aead::seal(&key, &nonce, &plaintext, &aad).unwrap();
+    // `seal` returns the ciphertext with the 16-byte tag appended.
+    assert_eq!(
+        sealed,
+        hex("8995ae2e6df3dbf96fac7b7137bae67feca5aa77d51d4a0a14d9c51e1da474ab")
+    );
+    // Opening with the same inputs returns the plaintext; a different AAD fails.
+    assert_eq!(aead::open(&key, &nonce, &sealed, &aad).unwrap(), plaintext);
+    assert!(aead::open(&key, &nonce, &sealed, b"other-aad").is_err());
 }

@@ -39,12 +39,12 @@ of vault contents in Release 1.
 |----|--------|------------------------|
 | T1 | **Theft of the vault file at rest.** Attacker copies `vault.avlt`. | Entire vault encrypted with AES-256-GCM under a random 256-bit data key. Data key wrapped by Argon2id-derived key from the master password. No plaintext metadata. |
 | T2 | **Stolen backups.** Attacker obtains a backup container. | Backups are the same authenticated encrypted container format, portable and self-contained (salts + KDF params + wrapped keys). No plaintext secrets. |
-| T3 | **Offline guessing of the master password.** | Argon2id with memory-hard parameters benchmarked on supported machines; parameters stored with the vault; unique salt. High-entropy recovery key as an independent wrapping path. |
+| T3 | **Offline guessing of the master password.** | Argon2id with memory-hard parameters (fixed recommended default: 64 MiB, t=3, p=1 — **not** benchmarked at setup); parameters stored with the vault; unique salt. High-entropy recovery key as an independent wrapping path. |
 | T4 | **Tampering / corruption of the vault or a backup.** | AES-256-GCM authentication tag over ciphertext plus authenticated metadata (AAD). Any modification or truncation fails closed and is reported, never silently accepted. |
 | T5 | **Accidental deletion or a broken UI stranding backups.** | Atomic backup writes (temp → flush → validate → rename), retention of previous backups, a standalone recovery CLI that needs only the file + password/recovery key, and documented file format. |
 | T6 | **Forgotten master password.** | Recovery key generated at setup, stored separately by the user, can unwrap the data key independently. Backups preserved until a restore is verified. |
 | T7 | **Clipboard interception after copy.** | Copy action starts a configurable clipboard-clearing timer; the app clears the clipboard when it fires and reports it. (Cannot prevent a process that reads the clipboard within the window.) |
-| T8 | **Secrets left exposed on an unlocked, idle machine.** | Auto-lock on inactivity, Windows session lock, sleep, and user switch. Masked fields by default. |
+| T8 | **Secrets left exposed on an unlocked, idle machine.** | Auto-lock after in-app inactivity (front-end timer + a backend idle safety net). **Not** yet implemented: hooks for Windows session lock, sleep, or user switch. Masked fields by default. |
 | T9 | **Plaintext import leakage.** | Import flows state plainly that Proton Pass / CSV exports may be plaintext, operate on the minimum files, are local-only, never upload, and advise removing the source export afterward. |
 | T10 | **Secret leakage through logs, crash reports, or fixtures.** | Log scrubbing / redaction; no secrets in debug logs, shell arguments, telemetry, or test fixtures. Crash reports redact paths and filenames where possible and never attach documents. |
 | T11 | **Master-password rotation.** | Vault format versioning makes rotation an explicit, documented operation; the rule for whether the recovery key can restore old backups is surfaced in the UI. |
@@ -98,7 +98,8 @@ Each requirement from the build brief maps to concrete design decisions:
 - Random 256-bit data key from OS RNG → `02-vault-format.md` §3.
 - AES-256-GCM, unique nonces, authenticated metadata → `02-vault-format.md` §4.
 - Encrypt all item metadata, not just passwords → `02-vault-format.md` §5.
-- Argon2id wrapping key, per-vault salt, benchmarked params → `02-vault-format.md` §3.
+- Argon2id wrapping key, per-vault salt, stored params (fixed recommended
+  default; not benchmarked) → `02-vault-format.md` §3.
 - Independent recovery-key wrapping path → `02-vault-format.md` §3.4.
 - Never store master/recovery key → `02-vault-format.md`, `03-architecture.md` §6.
 - Portable, DPAPI-independent backups → `02-vault-format.md` §6.
@@ -114,6 +115,8 @@ Each requirement from the build brief maps to concrete design decisions:
 - Zeroization in a managed/GC runtime (the JS frontend) is not reliable; secrets
   should live in the Rust core and be handed to the UI only transiently.
 - Argon2id parameters trade unlock cost against resistance to offline guessing;
-  parameters are benchmarked and revisable, not absolute.
+  the parameters are a fixed recommended default stored with the vault and are
+  revisable in a future version, not absolute (they are **not** benchmarked at
+  setup in Release 1).
 - A single-device vault has no conflict handling; Restore replaces the vault only
   after verification and explicit confirmation.

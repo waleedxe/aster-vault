@@ -35,6 +35,17 @@ jobs:
       - run: cargo clippy -p vault-core -p vault-recovery-cli --all-targets -- -D warnings
       - run: cargo test -p vault-core -p vault-recovery-cli
 
+  audit:
+    name: Dependency audit (cargo audit)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      # Advisory database check against Cargo.lock (RustSec advisories). The
+      # action opens/updates a tracking issue on failure using the token below.
+      - uses: rustsec/audit-check@v2
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
   # The Tauri GUI crate requires Windows and the generated icon set. It is built
   # natively on Windows in the release workflow (MSVC). A per-PR check is added
   # once the icon set exists; see docs/specs/05-implementation-plan.md Phase 7.

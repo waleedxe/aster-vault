@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
+import { Info, X } from "lucide-react";
 
 import { Button, Card, Checkbox, Input, Logo } from "../../components/ui";
 import { LanguageSwitcher } from "../../components/common/LanguageSwitcher";
@@ -19,6 +20,7 @@ export function UnlockView({ onUnlocked }: { onUnlocked: () => void }) {
   const [useRecovery, setUseRecovery] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [betaDismissed, setBetaDismissed] = useState(false);
 
   const chooseFile = async () => {
     const chosen = await pickExistingVault();
@@ -60,6 +62,24 @@ export function UnlockView({ onUnlocked }: { onUnlocked: () => void }) {
 
         <h1 className="text-2xl font-semibold">{t("lock.title")}</h1>
         <p className="mt-2 text-sm text-muted">{t("lock.subtitle")}</p>
+
+        {!betaDismissed && (
+          <div
+            role="note"
+            className="mt-4 flex items-start gap-2 rounded-control border border-amber/50 bg-amber/10 px-3 py-2 text-sm text-amber-text"
+          >
+            <Info className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
+            <span className="flex-1">{t("beta.notice")}</span>
+            <button
+              type="button"
+              aria-label={t("beta.dismiss")}
+              onClick={() => setBetaDismissed(true)}
+              className="shrink-0 rounded p-0.5 hover:bg-amber/20"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+        )}
 
         <div className="mt-4 flex items-end gap-2">
           <Input

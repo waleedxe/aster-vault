@@ -9,6 +9,16 @@ the format is defined so that an independent recovery tool can read it.
 > libraries (see §8). Nonces are never reused; the data key is generated with the
 > OS CSPRNG.
 
+> **As implemented (2026-10-23).** This document was written in Phase 0 as a
+> design. Where the shipped code differs, the difference is called out inline
+> below. The container format, version and AAD are **frozen** — the corrections
+> here describe the code, they do not change it. In short: the payload nonce is
+> **random per save** (not counter-derived); the payload/header AAD is
+> `{format_version, created_at}` plus a domain-separator prefix (no KDF params,
+> salts, wrap descriptors or record-index digest); KDF parameters are a
+> hardcoded recommended default (64 MiB / t=3 / p=1), not benchmarked at setup;
+> and there is no unlock rate-limiting.
+
 ## 1. Design goals
 
 1. Every secret **and its metadata** is encrypted (names, URLs, usernames, tags,
@@ -44,18 +54,22 @@ only difference is operational: a backup is a point-in-time copy of the containe
 ### 3.2 Wrapping key (KEK)
 - `KEK = Argon2id(master_password, salt = vault_salt, params)`.
 - `vault_salt`: 16 random bytes, unique per vault, stored plaintext in the header.
-- Parameters (`m_cost`, `t_cost`, `p_cost`) are **benchmarked** at setup for the
-  target machine within a UX budget (default target ~0.5–1.0 s unlock), stored in
-  the header, and upgradeable on next unlock.
+- Parameters (`m_cost`, `t_cost`, `p_cost`) are stored in the header.
+  **As implemented:** they are a hardcoded recommended default
+  (`KdfParams::recommended()` = 64 MiB, t=3, p=1), **not** benchmarked at setup.
+  A `kdf::benchmark` helper exists but is not called by the app; parameters are
+  read back from the header on unlock, so a future version can raise them without
+  locking anyone out.
 
 ### 3.3 Master-password wrap
-- `wrapped_dek_master = AES-256-GCM(key = KEK, nonce = N1, plaintext = DEK, aad = header_core)`.
+- `wrapped_dek_master = AES-256-GCM(key = KEK, nonce = N1, plaintext = DEK, aad = AAD)`.
+- `AAD` is `{format_version, created_at}` (see §4).
 - Stored with its nonce and tag in the header.
 
 ### 3.4 Recovery-key wrap (independent path)
 - At setup, generate a high-entropy **RK** (256-bit), present it to the user as a
   formatted recovery key, and require the user to confirm it is stored safely.
-- `wrapped_dek_recovery = AES-256-GCM(key = KDF(RK), nonce = N2, plaintext = DEK, aad = header_core)`.
+- `wrapped_dek_recovery = AES-256-GCM(key = Argon2id(RK, recovery_salt, params), nonce = N2, plaintext = DEK, aad = AAD)` (same `AAD` as §3.3).
 - The recovery path is **independent** of the master password: changing the master
   password rewraps `wrapped_dek_master` but does **not** invalidate the recovery
   key. The exact rule for restoring *old* backups after rotation is surfaced in
@@ -67,18 +81,29 @@ only difference is operational: a backup is a point-in-time copy of the containe
 ## 4. Encryption
 
 - **AEAD**: AES-256-GCM (from `aes-gcm`).
-- **Nonce discipline**: a 96-bit nonce is used **once per key**. Two strategies,
-  both enforced:
+- **Nonce discipline**: a 96-bit nonce is used **once per key**. **As
+  implemented:**
   - Wrapping keys (KEK/RK) are used for a **single** wrap operation, so their
     nonce is random and never reused.
-  - The DEK encrypts many records, so per-record nonces are derived from a
-    **monotonic counter** stored/verified in the container (counter || random
-    prefix), guaranteeing uniqueness. Counter reuse is a hard error.
-- **AAD (authenticated but not encrypted metadata)**: header core fields —
-  format version, KDF params, salts, wrap descriptors, and the record index
-  digest — are bound as additional authenticated data so header tampering fails.
+  - The DEK encrypts the whole store as **one payload per save**, so its nonce is
+    **random per save**. A 96-bit random nonce is safe for up to ~2³² saves under
+    one data key (NIST SP 800-38D guidance), far above any realistic use. There is
+    **no counter** and therefore no counter-reuse failure mode.
+  - *(Original design, not implemented:* a monotonic counter `counter || random
+    prefix` guaranteeing uniqueness structurally. It was dropped in favour of the
+    simpler single-payload design, whose random-nonce bound is documented in
+    `container/format.rs`.*)*
+- **AAD (authenticated but not encrypted metadata)**: **as implemented**, the AAD
+  is the header's `{format_version, created_at}` (serialized) plus a fixed
+  domain-separator prefix (`aster-vault/payload/v1`) for the payload. KDF params,
+  salts, wrap descriptors and `kind` are deliberately **excluded** so a rewrap or
+  a backup conversion cannot invalidate the other wrap; tampering with an excluded
+  field instead yields the wrong key and fails authentication. *(Original design:*
+  bind the full header core including salts, wrap descriptors and a record-index
+  digest. *No record-index digest exists in the format.)*
 - **Payload**: the record store (see §5) is serialized, then encrypted with the
-  DEK as a single AEAD payload (per-record envelopes are also supported — see §5).
+  DEK as a single AEAD payload, under a random per-save nonce. (Per-record
+  envelopes are a possible future format version, not implemented.)
 
 ## 5. Record store
 
@@ -92,9 +117,9 @@ sealed with the DEK into the container payload.
   memory while unlocked; indexes are rebuilt on unlock and never written to disk.
 - This single-payload design is deliberately simple and portable. If the vault
   grows very large, a future format version may move to per-record envelopes
-  (each record sealed under the DEK with counter-derived nonces) backed by
-  SQLite, with record bodies still AEAD-encrypted. That change is a versioned
-  migration and does not alter the key model.
+  (each record sealed under the DEK with unique nonces) backed by SQLite, with
+  record bodies still AEAD-encrypted. That change is a versioned migration and
+  does not alter the key model.
 - `schema_version` in the payload is independent of the container
   `format_version`, so data-shape migrations and format migrations are tracked
   separately.
@@ -104,8 +129,9 @@ sealed with the DEK into the container payload.
 A backup is a portable, versioned, authenticated encrypted container that is
 **independent of the Windows profile and DPAPI**. It contains:
 
-- Header core: format version, container kind (`vault`|`backup`), created_at,
-  KDF params, salts, wrap descriptors, record-index digest.
+- Header: format version, container kind (`vault`|`backup`), created_at, KDF
+  params, salts, wrap descriptors. (The AAD actually binds only
+  `format_version` and `created_at` — see §4; there is no record-index digest.)
 - Wrapped DEK paths (master, recovery).
 - The encrypted record store.
 - Optional encrypted attachments.
@@ -116,10 +142,10 @@ on a clean machine using only the file and the master password or recovery key.
 ### 6.1 Atomic export
 1. Write to a temporary file in the destination directory.
 2. Flush to disk (`fsync`).
-3. Re-read and validate the container format and authentication (verify the DEK
-   wrap and record-store tag without needing the master password — validation of
-   the DEK-wrap tag requires the KEK, so a **structural + digest** validation is
-   performed at export; full authentication is verified on restore).
+3. Re-read and validate the container format (**structural** validation: magic,
+   format version, header, framing and tag length). The DEK-wrap tag cannot be
+   verified without the KEK, and there is no record-index digest, so full
+   authentication is verified on restore (or on demand with a credential).
 4. Atomically rename into place.
 5. Retain a configurable series of previous backups.
 
@@ -159,9 +185,9 @@ mirrored into `THIRD_PARTY_LICENSES.md`.
 |-----------|-----------|
 | Wrong master password | Fail closed, generic error, no oracle beyond success/failure. |
 | Wrong recovery key | Fail closed. |
-| Tampered header | AAD authentication fails → refuse. |
+| Tampered AAD field (`format_version`, `created_at`) | AAD authentication fails → refuse. |
+| Tampered non-AAD header field (salts, KDF params, wrap descriptors) | Wrong key → authentication fails → refuse. |
 | Truncated/modified record store | GCM tag fails → refuse. |
-| Counter reuse detected | Hard error → refuse. |
 | Unknown format version | Refuse with migration guidance. |
 | Interrupted backup write | Last good backup untouched; temp file discarded. |
 | Restore from a valid backup | Write new vault, verify, preview, confirm, then swap. |
