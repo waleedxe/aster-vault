@@ -11,7 +11,7 @@ use std::fs::{self, File};
 use std::io::Write;
 use std::path::{Path, PathBuf};
 
-use zeroize::Zeroizing;
+use zeroize::{Zeroize, Zeroizing};
 
 use crate::container::format::{self, DecodedContainer};
 use crate::container::header::{ContainerKind, VaultHeader};
@@ -37,6 +37,64 @@ impl std::fmt::Debug for Vault {
             .field("items", &self.data.items.len())
             .field("folders", &self.data.folders.len())
             .finish_non_exhaustive()
+    }
+}
+
+/// Wipe a string map's keys and values, then drop the (now zeroed) entries.
+///
+/// `BTreeMap::iter_mut` only lends the keys immutably, so the map is taken
+/// (leaving an empty one in its place) and consumed entry by entry.
+fn zeroize_string_map(map: &mut std::collections::BTreeMap<String, String>) {
+    for (mut key, mut value) in std::mem::take(map) {
+        key.zeroize();
+        value.zeroize();
+    }
+}
+
+/// Overwrite every plaintext buffer owned by an item.
+fn zeroize_item(item: &mut Item) {
+    item.id.zeroize();
+    item.title.zeroize();
+    if let Some(folder_id) = item.folder_id.as_mut() {
+        folder_id.zeroize();
+    }
+    for tag in item.tags.iter_mut() {
+        tag.zeroize();
+    }
+    item.tags.clear();
+    zeroize_string_map(&mut item.fields);
+    item.notes.zeroize();
+    for revision in item.history.iter_mut() {
+        zeroize_string_map(&mut revision.fields);
+        revision.notes.zeroize();
+    }
+    item.history.clear();
+}
+
+/// Wipe every plaintext buffer reachable from the decrypted graph.
+///
+/// Runs from [`Vault`]'s `Drop`, which fires on both an explicit lock (the
+/// session drops the vault) and process teardown. Each `String`/`Vec`/map entry
+/// is overwritten with zeroes *before* the allocator frees it, so decrypted
+/// titles, usernames, passwords, notes and TOTP seeds do not linger in freed
+/// heap pages. This is best-effort only — the OS may have paged the bytes to
+/// disk or copied them — so it is not a secure-erase guarantee.
+fn zeroize_vault_data(data: &mut VaultData) {
+    for item in data.items.iter_mut() {
+        zeroize_item(item);
+    }
+    data.items.clear();
+    for folder in data.folders.iter_mut() {
+        folder.name.zeroize();
+    }
+    data.folders.clear();
+}
+
+impl Drop for Vault {
+    fn drop(&mut self) {
+        // Locking (and process exit) drops the `Vault`; wipe the decrypted graph
+        // before the allocator reclaims it. `VaultKey` zeroizes itself on drop.
+        zeroize_vault_data(&mut self.data);
     }
 }
 
@@ -305,4 +363,63 @@ pub fn atomic_write(path: &Path, bytes: &[u8]) -> Result<(), VaultError> {
     }
     fs::rename(&tmp, path)?;
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::model::Revision;
+    use std::collections::BTreeMap;
+
+    /// The wipe helper must empty every plaintext collection. We cannot portably
+    /// observe the freed bytes, so this asserts the reachable graph is emptied
+    /// (which is what `Drop for Vault` guarantees before deallocation).
+    #[test]
+    fn zeroize_vault_data_empties_the_graph() {
+        let mut data = VaultData::new();
+        let mut item = Item::new(ItemType::Login, "TOPSECRET-TITLE");
+        item.set_field("password", "TOPSECRET-PASSWORD");
+        item.notes = "TOPSECRET-NOTES".to_string();
+        item.tags.push("TOPSECRET-TAG".to_string());
+        item.folder_id = Some("TOPSECRET-FOLDER-ID".to_string());
+        item.history.push(Revision {
+            updated_at: 0,
+            fields: BTreeMap::from([("password".to_string(), "OLD-SECRET".to_string())]),
+            notes: "OLD-NOTES".to_string(),
+        });
+        data.items.push(item);
+        data.folders.push(Folder::new("TOPSECRET-FOLDER"));
+
+        zeroize_vault_data(&mut data);
+
+        assert!(data.items.is_empty());
+        assert!(data.folders.is_empty());
+    }
+
+    /// A `Vault` must keep behaving normally with the `Drop` impl in place:
+    /// mutations, serialization, and reopen all still round-trip.
+    #[test]
+    fn vault_still_behaves_with_drop_impl() {
+        let params = crate::crypto::kdf::KdfParams {
+            m_cost: 8,
+            t_cost: 1,
+            p_cost: 1,
+        };
+        let (mut vault, _recovery, _bytes) = Vault::create("pw", params).unwrap();
+        let mut item = Item::new(ItemType::Login, "Roundtrip");
+        item.set_field("password", "s3cret");
+        vault.add_item(item);
+        let bytes = vault.to_bytes().unwrap();
+        drop(vault);
+
+        let reopened = Vault::from_bytes(&bytes, "pw").unwrap();
+        assert_eq!(reopened.item_count(), 1);
+        assert_eq!(
+            reopened
+                .item(&reopened.data().items[0].id)
+                .unwrap()
+                .field("password"),
+            Some("s3cret")
+        );
+    }
 }

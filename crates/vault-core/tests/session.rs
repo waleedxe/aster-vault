@@ -124,6 +124,42 @@ fn create_item_persists_across_lock_and_reopen() {
     );
 }
 
+/// A restore must never write over the vault file that is currently open, and
+/// must reject a directory destination. A fresh file path still works.
+#[test]
+fn restore_refuses_the_open_vault_and_directory_destinations() {
+    let dir = temp_dir("restore-guard");
+    let path = dir.join("vault.avlt");
+    let session = VaultSession::default();
+    session.create_vault(&path, "master-pw").unwrap();
+    session
+        .create_item(login_input("Northstar", "s3cret"))
+        .unwrap();
+    let backup_path = PathBuf::from(session.export_backup(&dir).unwrap());
+
+    // Destination == the open vault file: refused before anything is written.
+    let err = session
+        .restore_backup(&backup_path, "master-pw", &path)
+        .unwrap_err();
+    assert!(
+        err.contains("currently open vault"),
+        "unexpected error: {err}"
+    );
+
+    // Destination is a directory: refused.
+    assert!(session
+        .restore_backup(&backup_path, "master-pw", &dir)
+        .is_err());
+
+    // A genuine file destination restores and reports the item count.
+    let dest = dir.join("restored.avlt");
+    let manifest = session
+        .restore_backup(&backup_path, "master-pw", &dest)
+        .unwrap();
+    assert_eq!(manifest.item_count, Some(1));
+    assert!(dest.exists());
+}
+
 /// Updates and deletes must likewise be durable across a lock/reopen cycle.
 #[test]
 fn update_and_delete_persist_across_lock_and_reopen() {

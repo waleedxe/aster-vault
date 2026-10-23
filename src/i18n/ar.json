@@ -150,7 +150,12 @@
     "destination": "استعد إلى ملف خزنة جديد",
     "chooseDestination": "اختر الوجهة",
     "passwordForRestore": "كلمة المرور الرئيسية أو مفتاح استعادة النسخة الاحتياطية",
-    "restored": "تمت استعادة {{count}} عنصر إلى {{path}}"
+    "restored": "تمت استعادة {{count}} عنصر إلى {{path}}",
+    "enterCredential": "أدخل كلمة المرور الرئيسية للنسخة الاحتياطية أو مفتاح الاستعادة أولًا، ثم اختبرها.",
+    "verifiedCount": "تم التحقق من النسخة الاحتياطية — {{count}} عنصر",
+    "confirmRestoreTitle": "استعادة هذه النسخة الاحتياطية؟",
+    "confirmRestoreBody": "سيؤدي هذا إلى كتابة ملف خزنة جديد في {{path}}. لن يتم استبدال خزنتك الحالية.",
+    "confirmRestoreAction": "استعد الآن"
   },
   "import": {
     "title": "استيراد",

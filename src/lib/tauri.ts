@@ -236,12 +236,42 @@ export function listBackups(dir: string): Promise<BackupDto[]> {
   return invoke<BackupDto[]>("list_backups", { dir });
 }
 
-/** Structurally verify a backup; returns its created-at timestamp. */
+/** Result of authenticating a backup file. */
+export interface VerifiedBackup {
+  created_at: number;
+  item_count: number;
+}
+
+/**
+ * Structurally verify a backup; returns its created-at timestamp.
+ *
+ * Structural only — it cannot detect a tampered payload. Use
+ * {@link verifyBackupAuthenticated} for a real check.
+ */
 export function verifyBackup(path: string): Promise<number> {
   return invoke<number>("verify_backup", { path });
 }
 
-/** Restore a backup to a new vault file. */
+/**
+ * Authenticate a backup with its master password or recovery key.
+ *
+ * Actually decrypts the payload, so a tampered backup fails.
+ */
+export function verifyBackupAuthenticated(
+  path: string,
+  credential: string,
+): Promise<VerifiedBackup> {
+  return invoke<VerifiedBackup>("verify_backup_authenticated", {
+    path,
+    credential,
+  });
+}
+
+/**
+ * Restore a backup to a new vault file.
+ *
+ * `masterPassword` accepts the backup's master password or its recovery key.
+ */
 export function restoreBackup(
   path: string,
   masterPassword: string,
@@ -250,6 +280,19 @@ export function restoreBackup(
   return invoke<VaultStatus>("restore_backup", {
     path,
     masterPassword,
+    destination,
+  });
+}
+
+/** Restore a backup using an explicit recovery key. */
+export function restoreBackupWithRecovery(
+  path: string,
+  recoveryKey: string,
+  destination: string,
+): Promise<VaultStatus> {
+  return invoke<VaultStatus>("restore_backup_with_recovery", {
+    path,
+    recoveryKey,
     destination,
   });
 }

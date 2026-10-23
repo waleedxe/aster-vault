@@ -66,15 +66,73 @@ pub fn verify_structure(bytes: &[u8]) -> Result<BackupManifest, VaultError> {
     })
 }
 
-/// Open a backup with the master password and report item count.
-pub fn inspect(bytes: &[u8], master_password: &str) -> Result<BackupManifest, VaultError> {
-    let vault = Vault::from_bytes(bytes, master_password)?;
-    Ok(BackupManifest {
+/// Build a manifest from an already-opened (authenticated) vault.
+fn manifest_of(vault: &Vault) -> BackupManifest {
+    BackupManifest {
         created_at: vault.header().created_at,
         kind: vault.header().kind,
         item_count: Some(vault.item_count() as u64),
         authenticated: true,
-    })
+    }
+}
+
+/// Reject a restore destination that cannot safely receive a vault file.
+///
+/// The destination must be a *file* path: a directory (such as the backup
+/// folder the UI used to pre-fill) would make the final atomic rename fail, and
+/// a path with no file name is ambiguous. Refusing the vault file that is
+/// currently open is the session layer's job, since only it knows that path.
+fn ensure_file_destination(destination: &Path) -> Result<(), VaultError> {
+    if destination.is_dir() || destination.file_name().is_none() {
+        return Err(VaultError::InvalidDestination);
+    }
+    Ok(())
+}
+
+/// Open a backup with the master password and report item count.
+pub fn inspect(bytes: &[u8], master_password: &str) -> Result<BackupManifest, VaultError> {
+    let vault = Vault::from_bytes(bytes, master_password)?;
+    Ok(manifest_of(&vault))
+}
+
+/// Authenticate a backup with the master password and report item count.
+///
+/// Unlike [`verify_structure`], this actually decrypts the payload, so a
+/// byte-flipped backup fails. Alias of [`inspect`] with a name that says what
+/// it proves.
+pub fn verify_with_password(
+    bytes: &[u8],
+    master_password: &str,
+) -> Result<BackupManifest, VaultError> {
+    inspect(bytes, master_password)
+}
+
+/// Authenticate a backup with a recovery key and report item count.
+pub fn verify_with_recovery(
+    bytes: &[u8],
+    recovery_key: &RecoveryKey,
+) -> Result<BackupManifest, VaultError> {
+    let vault = Vault::from_bytes_with_recovery(bytes, recovery_key)?;
+    Ok(manifest_of(&vault))
+}
+
+/// Authenticate a backup with **either** a master password or a recovery key.
+///
+/// Tries the master password first; if that does not unwrap the key, the
+/// credential is parsed as a recovery key. Fails closed if neither path
+/// authenticates. The manifest reports the item count on success.
+pub fn verify_with_credential(
+    bytes: &[u8],
+    credential: &str,
+) -> Result<BackupManifest, VaultError> {
+    match Vault::from_bytes(bytes, credential) {
+        Ok(vault) => Ok(manifest_of(&vault)),
+        Err(VaultError::InvalidCredentials) => {
+            let key = RecoveryKey::decode(credential)?;
+            verify_with_recovery(bytes, &key)
+        }
+        Err(other) => Err(other),
+    }
 }
 
 /// Restore a backup's contents to a **new** file, leaving any existing file alone
@@ -84,14 +142,10 @@ pub fn restore_to_path(
     master_password: &str,
     destination: &Path,
 ) -> Result<BackupManifest, VaultError> {
+    ensure_file_destination(destination)?;
     let vault = Vault::from_bytes(bytes, master_password)?;
     vault.save_file(destination)?;
-    Ok(BackupManifest {
-        created_at: vault.header().created_at,
-        kind: vault.header().kind,
-        item_count: Some(vault.item_count() as u64),
-        authenticated: true,
-    })
+    Ok(manifest_of(&vault))
 }
 
 /// Restore using the recovery key instead of the master password.
@@ -100,14 +154,33 @@ pub fn restore_to_path_with_recovery(
     recovery_key: &RecoveryKey,
     destination: &Path,
 ) -> Result<BackupManifest, VaultError> {
+    ensure_file_destination(destination)?;
     let vault = Vault::from_bytes_with_recovery(bytes, recovery_key)?;
     vault.save_file(destination)?;
-    Ok(BackupManifest {
-        created_at: vault.header().created_at,
-        kind: vault.header().kind,
-        item_count: Some(vault.item_count() as u64),
-        authenticated: true,
-    })
+    Ok(manifest_of(&vault))
+}
+
+/// Restore using either a master password or a recovery key.
+///
+/// Auto-detects the credential the same way [`verify_with_credential`] does, so
+/// the recovery-key path is reachable from the desktop app as well as the CLI.
+pub fn restore_to_path_with_credential(
+    bytes: &[u8],
+    credential: &str,
+    destination: &Path,
+) -> Result<BackupManifest, VaultError> {
+    ensure_file_destination(destination)?;
+    match Vault::from_bytes(bytes, credential) {
+        Ok(vault) => {
+            vault.save_file(destination)?;
+            Ok(manifest_of(&vault))
+        }
+        Err(VaultError::InvalidCredentials) => {
+            let key = RecoveryKey::decode(credential)?;
+            restore_to_path_with_recovery(bytes, &key, destination)
+        }
+        Err(other) => Err(other),
+    }
 }
 
 /// List backups in `dir`, oldest first.

@@ -133,6 +133,77 @@ fn truncated_wrapped_key_fails_closed() {
 }
 
 #[test]
+fn kdf_parameters_are_clamped_at_upper_bounds() {
+    use vault_core::crypto::kdf::{MAX_M_COST, MAX_P_COST, MAX_T_COST};
+
+    let at_cap = KdfParams {
+        m_cost: MAX_M_COST,
+        t_cost: MAX_T_COST,
+        p_cost: MAX_P_COST,
+    };
+    // Values exactly at the cap are accepted.
+    assert!(at_cap.validate().is_ok());
+
+    // Anything above a cap is rejected with the existing error type.
+    assert!(matches!(
+        KdfParams {
+            m_cost: MAX_M_COST + 1,
+            ..at_cap
+        }
+        .validate(),
+        Err(VaultError::Kdf)
+    ));
+    assert!(matches!(
+        KdfParams {
+            t_cost: MAX_T_COST + 1,
+            ..at_cap
+        }
+        .validate(),
+        Err(VaultError::Kdf)
+    ));
+    assert!(matches!(
+        KdfParams {
+            p_cost: MAX_P_COST + 1,
+            ..at_cap
+        }
+        .validate(),
+        Err(VaultError::Kdf)
+    ));
+
+    // Lower bounds are still enforced.
+    assert!(KdfParams {
+        m_cost: 7,
+        ..at_cap
+    }
+    .validate()
+    .is_err());
+    assert!(KdfParams {
+        t_cost: 0,
+        ..at_cap
+    }
+    .validate()
+    .is_err());
+    assert!(KdfParams {
+        p_cost: 0,
+        ..at_cap
+    }
+    .validate()
+    .is_err());
+}
+
+#[test]
+fn crafted_header_with_huge_memory_cost_is_rejected_at_decode() {
+    // A file that asks for ~4 GiB of Argon2 memory must be refused when the
+    // header is parsed, before any derivation is attempted.
+    let created = create("pw", test_params()).unwrap();
+    let mut header = created.header.clone();
+    header.kdf.m_cost = u32::MAX;
+
+    let err = VaultHeader::from_bytes(&header.to_bytes().unwrap()).unwrap_err();
+    assert!(matches!(err, VaultError::Kdf));
+}
+
+#[test]
 fn unsupported_format_version_is_refused() {
     let created = create("pw", test_params()).unwrap();
     let mut header = created.header.clone();

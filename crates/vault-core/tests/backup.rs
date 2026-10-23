@@ -104,6 +104,73 @@ fn restore_with_recovery_key_works() {
     let dest = dir.join("restored-rk.avlt");
     let manifest = backup::restore_to_path_with_recovery(&bytes, &recovery, &dest).unwrap();
     assert_eq!(manifest.item_count, Some(1));
+
+    // The restored file is a real, openable vault — not just a copy.
+    let restored = Vault::open_file(&dest, "pw").unwrap();
+    assert_eq!(restored.item_count(), 1);
+
+    // Auto-detected credential path accepts the recovery key too.
+    let dest2 = dir.join("restored-rk-auto.avlt");
+    let auto = backup::restore_to_path_with_credential(&bytes, &recovery.encode(), &dest2).unwrap();
+    assert_eq!(auto.item_count, Some(1));
+    assert_eq!(Vault::open_file(&dest2, "pw").unwrap().item_count(), 1);
+}
+
+#[test]
+fn authenticated_verification_reports_counts_and_detects_corruption() {
+    let dir = temp_dir("verify-auth");
+    let vault = vault_with_three_items();
+    let path = backup::export(&vault, &dir).unwrap();
+    let bytes = fs::read(path).unwrap();
+
+    // Intact backup: real verification decrypts and reports the item count.
+    let manifest = backup::verify_with_password(&bytes, "pw").unwrap();
+    assert!(manifest.authenticated);
+    assert_eq!(manifest.item_count, Some(3));
+    assert!(matches!(
+        backup::verify_with_credential(&bytes, "nope").unwrap_err(),
+        VaultError::InvalidCredentials
+    ));
+
+    // Corrupted payload: the structural check still passes (framing intact),
+    // but authenticated verification fails closed.
+    let mut corrupted = bytes.clone();
+    let last = corrupted.len() - 1;
+    corrupted[last] ^= 0xff;
+    assert!(backup::verify_structure(&corrupted).is_ok());
+    assert!(backup::verify_with_password(&corrupted, "pw").is_err());
+    assert!(backup::verify_with_credential(&corrupted, "pw").is_err());
+}
+
+#[test]
+fn authenticated_verification_accepts_a_recovery_key() {
+    let dir = temp_dir("verify-rk");
+    let (mut vault, recovery, _b) = Vault::create("pw", test_params()).unwrap();
+    vault.add_item(Item::new(ItemType::Note, "n"));
+    let path = backup::export(&vault, &dir).unwrap();
+    let bytes = fs::read(path).unwrap();
+
+    let manifest = backup::verify_with_credential(&bytes, &recovery.encode()).unwrap();
+    assert!(manifest.authenticated);
+    assert_eq!(manifest.item_count, Some(1));
+}
+
+#[test]
+fn restore_refuses_a_directory_destination() {
+    let dir = temp_dir("restore-dir");
+    let vault = vault_with_three_items();
+    let path = backup::export(&vault, &dir).unwrap();
+    let bytes = fs::read(path).unwrap();
+
+    // The backup directory is not a file path and must be refused.
+    assert!(matches!(
+        backup::restore_to_path(&bytes, "pw", &dir).unwrap_err(),
+        VaultError::InvalidDestination
+    ));
+    assert!(matches!(
+        backup::restore_to_path_with_credential(&bytes, "pw", &dir).unwrap_err(),
+        VaultError::InvalidDestination
+    ));
 }
 
 #[test]

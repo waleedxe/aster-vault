@@ -39,7 +39,9 @@ pub fn run() {
             commands::export_backup,
             commands::list_backups,
             commands::verify_backup,
+            commands::verify_backup_authenticated,
             commands::restore_backup,
+            commands::restore_backup_with_recovery,
             commands::seconds_since_latest_backup,
             commands::apply_backup_retention
         ])

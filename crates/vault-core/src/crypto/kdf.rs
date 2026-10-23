@@ -15,6 +15,18 @@ pub const SALT_LEN: usize = 16;
 /// Length of the derived key (256 bits).
 pub const KEY_LEN: usize = 32;
 
+/// Upper bound on the Argon2id memory cost, in kibibytes (512 MiB).
+///
+/// Parameters travel in the file header, so a crafted container could otherwise
+/// ask for gigabytes of memory and stall or exhaust the machine at unlock time.
+/// This cap keeps a hostile header cheap to reject while staying far above any
+/// legitimate setting (the recommended default is 64 MiB).
+pub const MAX_M_COST: u32 = 512 * 1024;
+/// Upper bound on the number of passes.
+pub const MAX_T_COST: u32 = 10;
+/// Upper bound on the degree of parallelism.
+pub const MAX_P_COST: u32 = 4;
+
 /// Argon2id parameters, stored in the vault header.
 ///
 /// Defaults target roughly 0.5–1.0 s of unlock work on a modern desktop; they
@@ -40,14 +52,18 @@ impl KdfParams {
     }
 
     /// Validate that the parameters are within sane, supported bounds.
+    ///
+    /// Both the lower and upper bounds are enforced. The upper bounds reject a
+    /// crafted header that would otherwise turn unlock into a denial-of-service
+    /// (see [`MAX_M_COST`], [`MAX_T_COST`], [`MAX_P_COST`]).
     pub fn validate(&self) -> Result<(), VaultError> {
-        if self.m_cost < 8 {
+        if self.m_cost < 8 || self.m_cost > MAX_M_COST {
             return Err(VaultError::Kdf);
         }
-        if self.t_cost < 1 {
+        if self.t_cost < 1 || self.t_cost > MAX_T_COST {
             return Err(VaultError::Kdf);
         }
-        if self.p_cost < 1 || self.p_cost > 64 {
+        if self.p_cost < 1 || self.p_cost > MAX_P_COST {
             return Err(VaultError::Kdf);
         }
         Ok(())

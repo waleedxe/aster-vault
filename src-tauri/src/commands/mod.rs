@@ -289,7 +289,19 @@ pub fn list_backups(state: State<VaultSession>, dir: String) -> Result<Vec<Backu
     state.list_backups(&PathBuf::from(dir))
 }
 
+/// Result of authenticating a backup file.
+#[derive(Debug, Serialize)]
+pub struct VerifiedBackup {
+    /// Creation timestamp from the header (Unix seconds).
+    pub created_at: i64,
+    /// Number of items in the decrypted backup.
+    pub item_count: u64,
+}
+
 /// Structural verification of a backup file; returns its created-at timestamp.
+///
+/// This only checks the magic, framing and header — it cannot detect a tampered
+/// payload. Prefer [`verify_backup_authenticated`], which decrypts the backup.
 #[tauri::command]
 pub fn verify_backup(path: String) -> Result<i64, String> {
     let bytes = std::fs::read(&path).map_err(|e| e.to_string())?;
@@ -297,7 +309,27 @@ pub fn verify_backup(path: String) -> Result<i64, String> {
     Ok(manifest.created_at)
 }
 
+/// Authenticate a backup file with a master password or recovery key.
+///
+/// Decrypts the payload and returns the item count, so a tampered or
+/// wrong-credential backup fails. The credential is auto-detected.
+#[tauri::command]
+pub fn verify_backup_authenticated(
+    state: State<VaultSession>,
+    path: String,
+    credential: String,
+) -> Result<VerifiedBackup, String> {
+    let manifest = state.verify_backup(&PathBuf::from(path), &credential)?;
+    Ok(VerifiedBackup {
+        created_at: manifest.created_at,
+        item_count: manifest.item_count.unwrap_or(0),
+    })
+}
+
 /// Restore a backup to a new vault file. The active vault is locked first.
+///
+/// `master_password` accepts the backup's master password **or** its recovery
+/// key. Refuses a destination that is the open vault file or a directory.
 #[tauri::command]
 pub fn restore_backup(
     state: State<VaultSession>,
@@ -305,10 +337,35 @@ pub fn restore_backup(
     master_password: String,
     destination: String,
 ) -> Result<VaultStatus, String> {
-    let bytes = std::fs::read(&path).map_err(|e| e.to_string())?;
-    let manifest = backup::restore_to_path(&bytes, &master_password, &PathBuf::from(&destination))
-        .map_err(|_| "could not verify this file".to_string())?;
-    state.lock();
+    let manifest = state.restore_backup(
+        &PathBuf::from(path),
+        &master_password,
+        &PathBuf::from(destination),
+    )?;
+    restore_status(&state, manifest)
+}
+
+/// Restore a backup to a new vault file using an explicit recovery key.
+#[tauri::command]
+pub fn restore_backup_with_recovery(
+    state: State<VaultSession>,
+    path: String,
+    recovery_key: String,
+    destination: String,
+) -> Result<VaultStatus, String> {
+    let manifest = state.restore_backup_with_recovery(
+        &PathBuf::from(path),
+        &recovery_key,
+        &PathBuf::from(destination),
+    )?;
+    restore_status(&state, manifest)
+}
+
+/// Build the post-restore status, carrying the restored item count.
+fn restore_status(
+    state: &VaultSession,
+    manifest: backup::BackupManifest,
+) -> Result<VaultStatus, String> {
     let mut status = state.status();
     if let Some(count) = manifest.item_count {
         status.item_count = count as usize;

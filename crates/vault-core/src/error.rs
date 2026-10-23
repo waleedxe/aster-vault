@@ -35,6 +35,11 @@ pub enum VaultError {
     #[error("corrupt container")]
     Corrupt,
 
+    /// A restore destination cannot safely receive a vault file: it is a
+    /// directory, has no file name, or is the vault file currently open.
+    #[error("invalid destination")]
+    InvalidDestination,
+
     /// Serialization of a header/container failed.
     #[error("serialization failed")]
     Serialization(#[from] serde_json::Error),

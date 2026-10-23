@@ -198,6 +198,17 @@ fn input_to_item(input: &ItemInput) -> Item {
     item
 }
 
+/// Whether two paths refer to the same file.
+///
+/// Canonicalises both when they exist, so case differences and relative paths on
+/// Windows still compare equal; otherwise falls back to a literal comparison.
+fn same_file(a: &Path, b: &Path) -> bool {
+    match (a.canonicalize(), b.canonicalize()) {
+        (Ok(canonical_a), Ok(canonical_b)) => canonical_a == canonical_b,
+        _ => a == b,
+    }
+}
+
 impl VaultSession {
     /// Run `f` against the unlocked vault, or return an error if locked.
     pub fn with_vault<T>(
@@ -433,6 +444,66 @@ impl VaultSession {
             let path = backup::export(vault, dir).map_err(|e| e.to_string())?;
             Ok(path.to_string_lossy().to_string())
         })
+    }
+
+    /// Authenticate a backup file and report its item count.
+    ///
+    /// The credential may be a master password **or** a recovery key; the two
+    /// paths are auto-detected. This actually decrypts the payload (unlike the
+    /// structural check), so a tampered file fails. The session is untouched.
+    pub fn verify_backup(
+        &self,
+        backup_path: &Path,
+        credential: &str,
+    ) -> Result<backup::BackupManifest, String> {
+        let bytes = std::fs::read(backup_path).map_err(|e| e.to_string())?;
+        backup::verify_with_credential(&bytes, credential).map_err(|e| e.to_string())
+    }
+
+    /// Restore a backup to a new file, then lock the session.
+    ///
+    /// Refuses to write over the vault file that is currently open, and the core
+    /// refuses a directory destination, so a restore can never clobber the live
+    /// vault. The credential may be a master password or a recovery key.
+    pub fn restore_backup(
+        &self,
+        backup_path: &Path,
+        credential: &str,
+        destination: &Path,
+    ) -> Result<backup::BackupManifest, String> {
+        let bytes = std::fs::read(backup_path).map_err(|e| e.to_string())?;
+        self.reject_unsafe_destination(destination)?;
+        let manifest = backup::restore_to_path_with_credential(&bytes, credential, destination)
+            .map_err(|e| e.to_string())?;
+        self.lock();
+        Ok(manifest)
+    }
+
+    /// Restore a backup using an explicit recovery key, then lock the session.
+    pub fn restore_backup_with_recovery(
+        &self,
+        backup_path: &Path,
+        recovery_key: &str,
+        destination: &Path,
+    ) -> Result<backup::BackupManifest, String> {
+        let bytes = std::fs::read(backup_path).map_err(|e| e.to_string())?;
+        self.reject_unsafe_destination(destination)?;
+        let key = crate::RecoveryKey::decode(recovery_key)
+            .map_err(|_| "invalid recovery key".to_string())?;
+        let manifest = backup::restore_to_path_with_recovery(&bytes, &key, destination)
+            .map_err(|e| e.to_string())?;
+        self.lock();
+        Ok(manifest)
+    }
+
+    /// Reject a restore destination that would overwrite the open vault file.
+    fn reject_unsafe_destination(&self, destination: &Path) -> Result<(), String> {
+        if let Some(open) = self.path() {
+            if same_file(&open, destination) {
+                return Err("destination is the currently open vault".to_string());
+            }
+        }
+        Ok(())
     }
 
     /// List backups in a directory, newest first.

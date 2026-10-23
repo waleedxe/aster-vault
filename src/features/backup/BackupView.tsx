@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 
-import { Badge, Button, Card, Input, toast } from "../../components/ui";
+import { Badge, Button, Card, Dialog, Input, toast } from "../../components/ui";
 import * as api from "../../lib/tauri";
 import type { BackupDto } from "../../lib/tauri";
 import {
@@ -18,6 +18,24 @@ function formatAge(seconds: number): string {
   return `${Math.round(seconds / 86400)} d`;
 }
 
+/**
+ * Default restore destination: a distinct vault *file* next to the backup.
+ *
+ * The restore destination must be a file path — passing the backup directory
+ * (as the UI once did) is rejected by the backend.
+ */
+function defaultRestoreDestination(backupPath: string): string {
+  const separator = Math.max(
+    backupPath.lastIndexOf("/"),
+    backupPath.lastIndexOf("\\"),
+  );
+  const directory = separator >= 0 ? backupPath.slice(0, separator) : "";
+  const name = separator >= 0 ? backupPath.slice(separator + 1) : backupPath;
+  const base = name.replace(/\.[^.]*$/, "") || "restored";
+  const file = `${base}.restored.avlt`;
+  return directory ? `${directory}\\${file}` : file;
+}
+
 /** Backup center: create, list, verify, and restore. */
 export function BackupView() {
   const { t } = useTranslation();
@@ -28,6 +46,7 @@ export function BackupView() {
   const [restorePath, setRestorePath] = useState("");
   const [restorePassword, setRestorePassword] = useState("");
   const [restoreDest, setRestoreDest] = useState("");
+  const [confirmOpen, setConfirmOpen] = useState(false);
 
   const reload = useCallback(async (target: string | null) => {
     if (!target) return;
@@ -65,19 +84,22 @@ export function BackupView() {
   };
 
   const verify = async (path: string) => {
+    // Verification now authenticates, so it needs the backup's credential.
+    if (!restorePassword) {
+      setRestorePath(path);
+      toast(t("backup.enterCredential"), "amber");
+      return;
+    }
     try {
-      const created = await api.verifyBackup(path);
-      toast(
-        `${t("backup.verified")} — ${new Date(created * 1000).toLocaleString()}`,
-        "emerald",
-      );
+      const result = await api.verifyBackupAuthenticated(path, restorePassword);
+      toast(t("backup.verifiedCount", { count: result.item_count }), "emerald");
     } catch {
       toast(t("backup.couldNotVerify"), "amber");
     }
   };
 
   const restore = async () => {
-    if (!restorePath || !restoreDest) return;
+    if (!restorePath || !restoreDest || !restorePassword) return;
     try {
       const result = await api.restoreBackup(
         restorePath,
@@ -89,6 +111,7 @@ export function BackupView() {
         "emerald",
       );
       setRestorePassword("");
+      setConfirmOpen(false);
     } catch (err) {
       toast(String(err), "amber");
     }
@@ -152,7 +175,7 @@ export function BackupView() {
                   variant="ghost"
                   onClick={() => {
                     setRestorePath(backup.path);
-                    if (dir) setRestoreDest(dir);
+                    setRestoreDest(defaultRestoreDestination(backup.path));
                   }}
                 >
                   {t("backup.restore")}
@@ -207,12 +230,33 @@ export function BackupView() {
           </div>
           <Button
             disabled={!restorePath || !restoreDest || !restorePassword}
-            onClick={() => void restore()}
+            onClick={() => setConfirmOpen(true)}
           >
             {t("backup.restore")}
           </Button>
         </div>
       </Card>
+
+      <Dialog
+        open={confirmOpen}
+        onClose={() => setConfirmOpen(false)}
+        title={t("backup.confirmRestoreTitle")}
+        size="sm"
+        footer={
+          <>
+            <Button variant="ghost" onClick={() => setConfirmOpen(false)}>
+              {t("common.cancel")}
+            </Button>
+            <Button onClick={() => void restore()}>
+              {t("backup.confirmRestoreAction")}
+            </Button>
+          </>
+        }
+      >
+        <p className="text-sm text-muted">
+          {t("backup.confirmRestoreBody", { path: restoreDest })}
+        </p>
+      </Dialog>
     </div>
   );
 }
