@@ -93,3 +93,65 @@ fn session_lifecycle() {
     assert!(session.list_items(None).is_err());
     let _ = other;
 }
+
+/// A created item must survive a lock/reopen cycle without any explicit save:
+/// the session persists each mutation itself.
+#[test]
+fn create_item_persists_across_lock_and_reopen() {
+    let dir = temp_dir("persist-create");
+    let path = dir.join("vault.avlt");
+
+    let session = VaultSession::default();
+    session.create_vault(&path, "master-pw").unwrap();
+    let item = session
+        .create_item(login_input("Northstar", "s3cret"))
+        .unwrap();
+
+    // No manual save: locking drops the in-memory vault.
+    session.lock();
+    assert!(!session.status().unlocked);
+
+    // A fresh session reading the same file must see the item.
+    let reopened = VaultSession::default();
+    reopened.unlock_vault(&path, "master-pw").unwrap();
+    let items = reopened.list_items(None).unwrap();
+    assert_eq!(items.len(), 1);
+    assert_eq!(items[0].id, item.id);
+    assert_eq!(items[0].title, "Northstar");
+    assert_eq!(
+        items[0].fields.get("password").map(String::as_str),
+        Some("s3cret")
+    );
+}
+
+/// Updates and deletes must likewise be durable across a lock/reopen cycle.
+#[test]
+fn update_and_delete_persist_across_lock_and_reopen() {
+    let dir = temp_dir("persist-update-delete");
+    let path = dir.join("vault.avlt");
+
+    let session = VaultSession::default();
+    session.create_vault(&path, "master-pw").unwrap();
+    let item = session
+        .create_item(login_input("Northstar", "s3cret"))
+        .unwrap();
+
+    let mut updated = login_input("Northstar", "s3cret");
+    updated.title = "Northstar Pro".to_string();
+    session.update_item(&item.id, updated).unwrap();
+
+    // Reopen: the update survived without a manual save.
+    let reopened = VaultSession::default();
+    reopened.unlock_vault(&path, "master-pw").unwrap();
+    let items = reopened.list_items(None).unwrap();
+    assert_eq!(items.len(), 1);
+    assert_eq!(items[0].title, "Northstar Pro");
+
+    // Delete, then reopen once more: the deletion also survived.
+    assert!(reopened.delete_item(&item.id).unwrap());
+    reopened.lock();
+
+    let after_delete = VaultSession::default();
+    after_delete.unlock_vault(&path, "master-pw").unwrap();
+    assert!(after_delete.list_items(None).unwrap().is_empty());
+}

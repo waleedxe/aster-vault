@@ -190,13 +190,13 @@ pub fn update_item(
 /// Delete an item.
 #[tauri::command]
 pub fn delete_item(state: State<VaultSession>, id: String) -> Result<bool, String> {
-    state.with_vault(|v| Ok(v.delete_item(&id)))
+    state.delete_item(&id)
 }
 
 /// Toggle an item's favourite flag.
 #[tauri::command]
 pub fn toggle_favorite(state: State<VaultSession>, id: String) -> Result<bool, String> {
-    state.with_vault(|v| Ok(v.toggle_favorite(&id)))
+    state.toggle_favorite(&id)
 }
 
 /// List folders.

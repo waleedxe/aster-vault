@@ -266,6 +266,10 @@ impl VaultSession {
     }
 
     /// Drop the unlocked vault and its key material.
+    ///
+    /// Every mutating service method persists to disk before returning, so
+    /// there is nothing left to flush here and no save is attempted (which
+    /// keeps lock-time behaviour unchanged when there is no vault path).
     pub fn lock(&self) {
         if let Ok(mut inner) = self.inner.lock() {
             inner.vault = None;
@@ -323,9 +327,24 @@ impl VaultSession {
         self.with_vault(|vault| vault.save_file(&path).map_err(|e| e.to_string()))
     }
 
+    /// Apply a mutation to the unlocked vault and persist it to disk.
+    ///
+    /// The in-memory change is applied first; if it succeeds the vault is
+    /// written back to its file, so a mutation is durable even if the session
+    /// is locked (auto-lock, window close) before any explicit save. A failed
+    /// write is returned to the caller rather than swallowed.
+    fn mutate<T>(&self, f: impl FnOnce(&mut Vault) -> Result<T, String>) -> Result<T, String> {
+        let path = self.path().ok_or("no vault path")?;
+        self.with_vault(|vault| {
+            let value = f(vault)?;
+            vault.save_file(&path).map_err(|e| e.to_string())?;
+            Ok(value)
+        })
+    }
+
     /// Create a new item.
     pub fn create_item(&self, input: ItemInput) -> Result<ItemDto, String> {
-        self.with_vault(|vault| {
+        self.mutate(|vault| {
             let item = input_to_item(&input);
             let id = vault.add_item(item);
             let item = vault.item(&id).expect("just added");
@@ -335,7 +354,7 @@ impl VaultSession {
 
     /// Update an existing item.
     pub fn update_item(&self, id: &str, input: ItemInput) -> Result<ItemDto, String> {
-        self.with_vault(|vault| {
+        self.mutate(|vault| {
             vault
                 .update_item(
                     id,
@@ -347,6 +366,16 @@ impl VaultSession {
             let item = vault.item(id).ok_or("item not found")?;
             Ok(item_to_dto(item))
         })
+    }
+
+    /// Delete an item.
+    pub fn delete_item(&self, id: &str) -> Result<bool, String> {
+        self.mutate(|vault| Ok(vault.delete_item(id)))
+    }
+
+    /// Toggle an item's favourite flag.
+    pub fn toggle_favorite(&self, id: &str) -> Result<bool, String> {
+        self.mutate(|vault| Ok(vault.toggle_favorite(id)))
     }
 
     /// List items, optionally filtered by search.
@@ -367,7 +396,7 @@ impl VaultSession {
 
     /// Create a folder.
     pub fn create_folder(&self, name: &str) -> Result<FolderDto, String> {
-        self.with_vault(|vault| {
+        self.mutate(|vault| {
             let folder = Folder::new(name);
             let id = vault.add_folder(folder);
             let folder = vault
@@ -382,7 +411,7 @@ impl VaultSession {
 
     /// Delete a folder (items are un-parented).
     pub fn delete_folder(&self, id: &str) -> Result<bool, String> {
-        self.with_vault(|vault| Ok(vault.delete_folder(id)))
+        self.mutate(|vault| Ok(vault.delete_folder(id)))
     }
 
     /// Count reused passwords.
